@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.InteropServices;
 
 namespace KeyboardMouseWin
 {
@@ -25,111 +26,124 @@ namespace KeyboardMouseWin
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Dictionary<string, AutomationElement> captionedElements = new();
-
         private CaptionService CaptionService = new();
 
         private int characterIndex = 0;
 
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        private EventSimulator simulator;
+        private bool isShiftActive = false;
+
         public MainWindow()
         {
             var hook = new TaskPoolGlobalHook();
-            var simulator = new EventSimulator();
-            async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
-            {
-                Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
-                var key = char.ToUpper((char)e.Data.RawCode);
-                if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEscape)
-                {
-                    var elements = new List<AutomationElement>();
-                    await foreach (var element in EnumerateElements(AutomationElement.RootElement, 0))
-                    {
-                        elements.Add(element);
-                    }
-                    Dispatcher.Invoke(() =>
-                    {
-                        captionedElements.Clear();
-                        Canvas.Children.Clear();
-                        CaptionElements.Clear();
+            simulator = new EventSimulator();
 
-                        if (CaptionService.CurrentObjects.Count == 0)
-                        {
-                            characterIndex = 0;
-
-                            CaptionService.AddObjects(elements.Select(x => new CaptionedElement() { UiElement = x }));
-                            foreach ((var key, var element) in CaptionService.CurrentObjects)
-                            {
-                                CaptionElement(key, element);
-                            }
-
-                            // show the window to prevent any keyboard events going to the active
-                            // window.
-                            Show();
-                            Activate();
-                        }
-                        else
-                        {
-                            CaptionService.CurrentObjects.Clear();
-                            Dispatcher.InvokeAsync(Hide);
-                        }
-                    });
-                }
-                else if (CaptionService.CurrentObjects.Count > 0 && 'A' <= key && key <= 'Z')
-                {
-                    var filteredElements = CaptionService.GetFilteredOut(key, characterIndex).ToList();
-                    e.SuppressEvent = true;
-                    Dispatcher.InvokeAsync(() =>
-                    {
-                        // remove all filtered elements
-                        foreach (var element in filteredElements)
-                        {
-                            CaptionElements[element.Key].ForEach(captionElement => Canvas.Children.Remove(captionElement));
-                        }
-                    });
-                    // remove all filtered elements
-                    foreach (var element in filteredElements)
-                    {
-                        CaptionService.CurrentObjects.Remove(element.Key);
-                    }
-
-                    if (CaptionService.CurrentObjects.Count == 1)
-                    {
-                        var uiElement = CaptionService.CurrentObjects.First().Value.UiElement;
-                        //if (uiElement.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
-                        //{
-                        //    (invokePattern as InvokePattern)?.Invoke();
-                        //}
-                        //if (uiElement.TryGetCurrentPattern(SelectionPattern.Pattern, out var selectionPattern))
-                        //{
-                        //    (selectionPattern as SelectionPattern)?.Current.
-                        //}
-                        uiElement.TryGetClickablePoint(out var clickablePoint);
-                        if (clickablePoint.X != 0 && clickablePoint.Y != 0)
-                        {
-                            Dispatcher.Invoke(() =>
-                            {
-                                // hide the window such that keyboard event go again to the active window and
-                                // the click actually works.
-                                Hide();
-
-                                simulator.SimulateMousePress((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
-                                simulator.SimulateMouseRelease((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
-                            });
-                        }
-
-                        CaptionService.CurrentObjects.Clear();
-                        Dispatcher.InvokeAsync(() => CaptionElements.First().Value.ForEach(captionElement => Canvas.Children.Clear()));
-
-                        
-
-                    }
-                    ++characterIndex;
-                }
-            }
             hook.KeyPressed += Hook_KeyPressed;
+            //hook.KeyPressed += (_, e) => isShiftActive |= e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift;
+            //hook.KeyReleased += (_, e) => isShiftActive &= e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift;
             hook.RunAsync();
             InitializeComponent();
             Hide();
+        }
+
+        async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
+        {
+            Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
+            var pressedKey = char.ToUpper((char)e.Data.RawCode);
+            if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEscape)
+            {
+                // Clear everything on the screen.
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Canvas.Children.Clear();
+                    CaptionElements.Clear();
+                });
+
+                if (CaptionService.CurrentObjects.Count == 0)
+                {
+                    var root = AutomationElement.FromHandle(GetForegroundWindow());
+                    await CaptionUiElements(root);
+                }
+                else
+                {
+                    CaptionService.CurrentObjects.Clear();
+                    await Dispatcher.InvokeAsync(Hide);
+                }
+            }
+            else if (CaptionService.CurrentObjects.Count > 0 && 'A' <= pressedKey && pressedKey <= 'Z')
+            {
+                var filteredElements = CaptionService.GetFilteredOut(pressedKey, characterIndex).ToList();
+                e.SuppressEvent = true;
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    // remove all filtered elements
+                    foreach (var element in filteredElements)
+                    {
+                        CaptionElements[element.Key].ForEach(captionElement => Canvas.Children.Remove(captionElement));
+                    }
+                });
+                // remove all filtered elements
+                foreach (var element in filteredElements)
+                {
+                    CaptionService.CurrentObjects.Remove(element.Key);
+                }
+
+                if (CaptionService.CurrentObjects.Count == 1)
+                {
+                    var uiElement = CaptionService.CurrentObjects.First().Value.UiElement;
+                    //if (uiElement.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
+                    //{
+                    //    (invokePattern as InvokePattern)?.Invoke();
+                    //}
+                    //if (uiElement.TryGetCurrentPattern(SelectionPattern.Pattern, out var selectionPattern))
+                    //{
+                    //    (selectionPattern as SelectionPattern)?.Current.
+                    //}
+                    uiElement.TryGetClickablePoint(out var clickablePoint);
+                    if (clickablePoint.X != 0 && clickablePoint.Y != 0)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            // hide the window such that keyboard event go again to the active window and
+                            // the click actually works.
+                            Hide();
+
+                            simulator.SimulateMousePress((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
+                            simulator.SimulateMouseRelease((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
+                        });
+                    }
+
+                    CaptionService.CurrentObjects.Clear();
+                    await Dispatcher.InvokeAsync(() => CaptionElements.First().Value.ForEach(captionElement => Canvas.Children.Clear()));
+                }
+                ++characterIndex;
+            }
+        }
+
+        private async Task CaptionUiElements(AutomationElement root)
+        {
+            var watch = new Stopwatch();
+            var elements = new List<AutomationElement>();
+            await foreach (var element in EnumerateElements(root, 0))
+            {
+                elements.Add(element);
+            }
+
+            characterIndex = 0;
+
+            CaptionService.AddObjects(elements.Select(x => new CaptionedElement() { UiElement = x }));
+            foreach ((var key, var element) in CaptionService.CurrentObjects)
+            {
+                await Dispatcher.InvokeAsync(() => CaptionElement(key, element));
+            }
+
+            // show the window to prevent any keyboard events going to the active
+            // window.
+            await Dispatcher.InvokeAsync(Show);
+            await Dispatcher.InvokeAsync(Activate);
         }
 
         private Dictionary<string, List<FrameworkElement>> CaptionElements = new();
@@ -175,7 +189,11 @@ namespace KeyboardMouseWin
             {
                 yield break;
             }
-            var result = element.FindAll(TreeScope.Children, new System.Windows.Automation.PropertyCondition(AutomationElement.IsOffscreenProperty, false));
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var result = element.FindAll(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
+            stopwatch.Stop();
+            Debug.WriteLine($"time for depth {depth}: {stopwatch.ElapsedMilliseconds}");
 
             foreach (AutomationElement child in result)
             {
