@@ -8,8 +8,11 @@ namespace KeyboardMouseWin
         public Rectangle BoundingRectangle { get; private set; }
         public System.Windows.Point? ClickPoint { get; private set; }
 
+        public AutomationElement Element { get; set; }
+
         public AutomationUiElement(AutomationElement element)
         {
+            Element = element;
             BoundingRectangle = new Rectangle((int)element.Current.BoundingRectangle.X,
                 (int)element.Current.BoundingRectangle.Y,
                 (int)element.Current.BoundingRectangle.Width,

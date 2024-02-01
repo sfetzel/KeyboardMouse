@@ -10,15 +10,15 @@ namespace KeyboardMouseWin
 {
     internal class FlauiUiElement : IUIElement
     {
-        private AutomationElement element;
+        public AutomationElement Element {get; private set;}
 
-        public Rectangle BoundingRectangle => element.BoundingRectangle;
+        public Rectangle BoundingRectangle => Element.BoundingRectangle;
 
         public System.Windows.Point? ClickPoint
         {
             get
             {
-                if (element.TryGetClickablePoint(out var clickablePoint) &&
+                if (Element.TryGetClickablePoint(out var clickablePoint) &&
                     !clickablePoint.IsEmpty)
                 {
                     return new System.Windows.Point(clickablePoint.X, clickablePoint.Y);
@@ -29,7 +29,7 @@ namespace KeyboardMouseWin
 
         public FlauiUiElement(AutomationElement element)
         {
-            this.element = element;
+            Element = element;
         }
     }
 }

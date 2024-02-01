@@ -14,46 +14,41 @@ namespace KeyboardMouseWin
     {
         public static int CharacterCount { get; } = 26;
         public Dictionary<string, IUIElement> CurrentObjects { get; set; } = new();
-        public int CharCount { get; set; }
 
-        public void AddObjects(IEnumerable<IUIElement> elements)
+        public IEnumerable<string> AddObjects(IEnumerable<IUIElement> elements, string prefix = "")
         {
-            CurrentObjects.Clear();
+            var addedKeys = new List<string>();
             var elementCount = elements.Count();
-            if(elementCount == 0)
+            if (elementCount > 0)
             {
-                return;
-            }
+                // The count of characters we need for captioning is 26^k > #elements.
+                var charCount = elementCount > 1 ? (int)Math.Ceiling(Math.Log10(elementCount) / Math.Log10(CharacterCount)) : 1;
+                var iterator = elements.GetEnumerator();
+                var charIndices = new int[charCount];
 
-            // The count of characters we need for captioning is 26^k > #elements.
-            CharCount = (int)Math.Ceiling(Math.Log10(elementCount) / Math.Log10(CharacterCount));
-            var iterator = elements.GetEnumerator();
-            var charIndices = new int[CharCount];
-
-            while (iterator.MoveNext())
-            {
-                var element = iterator.Current;
-                var caption = String.Join(string.Empty, charIndices.Select(x => (char)(x + 65)));
-                CurrentObjects[caption] = element;
-
-                charIndices[CharCount - 1] += 1;
-                var i = CharCount - 1;
-                while (charIndices[i] >= CharacterCount)
+                while (iterator.MoveNext())
                 {
-                    charIndices[i] = 0;
-                    --i;
-                    charIndices[i] += 1;
+                    var element = iterator.Current;
+                    var caption = prefix + String.Join(string.Empty, charIndices.Select(x => (char)(x + 65)));
+                    CurrentObjects[caption] = element;
+                    addedKeys.Add(caption);
+
+                    charIndices[charCount - 1] += 1;
+                    var i = charCount - 1;
+                    while (charIndices[i] >= CharacterCount)
+                    {
+                        charIndices[i] = 0;
+                        --i;
+                        charIndices[i] += 1;
+                    }
                 }
             }
+            return addedKeys;
         }
 
         public IEnumerable<KeyValuePair<string, IUIElement>> GetFilteredOut(char c, int index)
         {
-            if (index >= CharCount)
-            {
-                return Enumerable.Empty<KeyValuePair<string, IUIElement>>();
-            }
-            return CurrentObjects.Where(pair => pair.Key[index] != c);
+            return CurrentObjects.Where(pair => pair.Key.Length > index && pair.Key[index] != c);
         }
 
     }

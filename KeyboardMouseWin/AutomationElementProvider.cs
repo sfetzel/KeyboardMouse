@@ -54,7 +54,7 @@ namespace KeyboardMouseWin
         public async IAsyncEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
             var root = AutomationElement.FromHandle(GetForegroundWindow());
-            await foreach(var element in EnumerateElements(root, 0))
+            await foreach (var element in EnumerateElements(root, 0))
             {
                 AutomationUiElement? uiElement = null;
                 try
@@ -65,9 +65,32 @@ namespace KeyboardMouseWin
                 {
                     Debug.WriteLine(ex);
                 }
-                if(uiElement != null)
+                if (uiElement != null)
                 {
                     yield return uiElement;
+                }
+            }
+        }
+
+        public async IAsyncEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
+        {
+            if (rootElement is AutomationUiElement automationElement)
+            {
+                await foreach (var element in EnumerateElements(automationElement.Element, 0))
+                {
+                    AutomationUiElement? uiElement = null;
+                    try
+                    {
+                        uiElement = new AutomationUiElement(element);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                    }
+                    if (uiElement != null)
+                    {
+                        yield return uiElement;
+                    }
                 }
             }
         }

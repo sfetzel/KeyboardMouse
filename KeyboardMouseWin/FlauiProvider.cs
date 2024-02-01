@@ -23,13 +23,33 @@ namespace KeyboardMouseWin
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 var window = automation.FromHandle(GetForegroundWindow());
-                var descendants = window.FindAllDescendants(window.ConditionFactory.ByControlType(ControlType.Button)).AsParallel().Select(
+                var descendants = window.FindAllChildren().AsParallel().Select(
                     element => new FlauiUiElement(element));
                 stopwatch.Stop();
                 Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
                 foreach(var element in descendants)
                 {
                     yield return element;
+                }
+            }
+        }
+
+        public async IAsyncEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
+        {
+            if (rootElement is FlauiUiElement flauiElement)
+            {
+                using (var automation = new UIA3Automation())
+                {
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+                    var descendants = flauiElement.Element.FindAllChildren().AsParallel().Select(
+                        element => new FlauiUiElement(element));
+                    stopwatch.Stop();
+                    Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
+                    foreach (var element in descendants)
+                    {
+                        yield return element;
+                    }
                 }
             }
         }

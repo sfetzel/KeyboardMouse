@@ -10,5 +10,7 @@ namespace KeyboardMouseWin
     public interface IUIElementProvider
     {
         public IAsyncEnumerable<IUIElement> GetElementsOfActiveWindow();
+
+        public IAsyncEnumerable<IUIElement> GetSubElements(IUIElement element);
     }
 }
