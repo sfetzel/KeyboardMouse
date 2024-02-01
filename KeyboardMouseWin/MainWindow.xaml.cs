@@ -29,12 +29,9 @@ namespace KeyboardMouseWin
         private CaptionService CaptionService = new();
 
         private int characterIndex = 0;
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
+        private IUIElementProvider elementProvider = new AutomationElementProvider();
 
         private EventSimulator simulator;
-        private bool isShiftActive = false;
 
         public MainWindow()
         {
@@ -42,8 +39,6 @@ namespace KeyboardMouseWin
             simulator = new EventSimulator();
 
             hook.KeyPressed += Hook_KeyPressed;
-            //hook.KeyPressed += (_, e) => isShiftActive |= e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift;
-            //hook.KeyReleased += (_, e) => isShiftActive &= e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift;
             hook.RunAsync();
             InitializeComponent();
             Hide();
@@ -64,8 +59,7 @@ namespace KeyboardMouseWin
 
                 if (CaptionService.CurrentObjects.Count == 0)
                 {
-                    var root = AutomationElement.FromHandle(GetForegroundWindow());
-                    await CaptionUiElements(root);
+                    await CaptionUiElements();
                 }
                 else
                 {
@@ -93,48 +87,44 @@ namespace KeyboardMouseWin
 
                 if (CaptionService.CurrentObjects.Count == 1)
                 {
-                    var uiElement = CaptionService.CurrentObjects.First().Value.UiElement;
-                    //if (uiElement.TryGetCurrentPattern(InvokePattern.Pattern, out var invokePattern))
-                    //{
-                    //    (invokePattern as InvokePattern)?.Invoke();
-                    //}
-                    //if (uiElement.TryGetCurrentPattern(SelectionPattern.Pattern, out var selectionPattern))
-                    //{
-                    //    (selectionPattern as SelectionPattern)?.Current.
-                    //}
-                    uiElement.TryGetClickablePoint(out var clickablePoint);
-                    if (clickablePoint.X != 0 && clickablePoint.Y != 0)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            // hide the window such that keyboard event go again to the active window and
-                            // the click actually works.
-                            Hide();
-
-                            simulator.SimulateMousePress((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
-                            simulator.SimulateMouseRelease((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
-                        });
-                    }
-
-                    CaptionService.CurrentObjects.Clear();
-                    await Dispatcher.InvokeAsync(() => CaptionElements.First().Value.ForEach(captionElement => Canvas.Children.Clear()));
+                    await ClickFirstElement();
                 }
                 ++characterIndex;
             }
         }
 
-        private async Task CaptionUiElements(AutomationElement root)
+        private async Task ClickFirstElement()
+        {
+            var uiElement = CaptionService.CurrentObjects.First().Value;
+            if (uiElement.ClickPoint.HasValue)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // hide the window such that keyboard event go again to the active window and
+                    // the click actually works.
+                    Hide();
+
+                    simulator.SimulateMousePress((short)uiElement.ClickPoint.Value.X, (short)uiElement.ClickPoint.Value.Y, SharpHook.Native.MouseButton.Button1, 1);
+                    simulator.SimulateMouseRelease((short)uiElement.ClickPoint.Value.X, (short)uiElement.ClickPoint.Value.Y, SharpHook.Native.MouseButton.Button1, 1);
+                });
+            }
+
+            CaptionService.CurrentObjects.Clear();
+            await Dispatcher.InvokeAsync(() => CaptionElements.First().Value.ForEach(captionElement => Canvas.Children.Clear()));
+        }
+
+        private async Task CaptionUiElements()
         {
             var watch = new Stopwatch();
-            var elements = new List<AutomationElement>();
-            await foreach (var element in EnumerateElements(root, 0))
+            var elements = new List<IUIElement>();
+            await foreach (var element in elementProvider.GetElementsOfActiveWindow())
             {
                 elements.Add(element);
             }
 
             characterIndex = 0;
 
-            CaptionService.AddObjects(elements.Select(x => new CaptionedElement() { UiElement = x }));
+            CaptionService.AddObjects(elements);
             foreach ((var key, var element) in CaptionService.CurrentObjects)
             {
                 await Dispatcher.InvokeAsync(() => CaptionElement(key, element));
@@ -148,74 +138,31 @@ namespace KeyboardMouseWin
 
         private Dictionary<string, List<FrameworkElement>> CaptionElements = new();
 
-        private void CaptionElement(string captionText, CaptionedElement element)
+        private void CaptionElement(string captionText, IUIElement element)
         {
-            var child = element.UiElement.Current;
-            if (child.BoundingRectangle.Left != double.PositiveInfinity &&
-                child.BoundingRectangle.Top != double.PositiveInfinity &&
-                child.BoundingRectangle.Width != double.PositiveInfinity &&
-                    child.BoundingRectangle.Height != double.PositiveInfinity)
-            {
+            var rectangle = new Rectangle();
+            rectangle.StrokeThickness = 1;
+            rectangle.Stroke = Brushes.Red;
+            var factor = 1;
+            Canvas.SetLeft(rectangle, 10 + element.BoundingRectangle.Left * factor);
+            Canvas.SetTop(rectangle, 5 + element.BoundingRectangle.Top * factor);
+            rectangle.Width = element.BoundingRectangle.Width * factor;
+            rectangle.Height = element.BoundingRectangle.Height * factor;
+            Canvas.Children.Add(rectangle);
 
-                var rectangle = new Rectangle();
-                rectangle.StrokeThickness = 1;
-                rectangle.Stroke = Brushes.Red;
-                var factor = 1;
-                Canvas.SetLeft(rectangle, 10 + child.BoundingRectangle.Left * factor);
-                Canvas.SetTop(rectangle, 5 + child.BoundingRectangle.Top * factor);
-                rectangle.Width = child.BoundingRectangle.Width * factor;
-                rectangle.Height = child.BoundingRectangle.Height * factor;
-                Canvas.Children.Add(rectangle);
+            var caption = new TextBlock();
+            caption.Text = captionText;
+            caption.Effect = new DropShadowEffect() { ShadowDepth = 4, Color = Colors.Black, BlurRadius = 4 };
+            caption.Foreground = Brushes.White;
+            caption.FontWeight = FontWeights.Bold;
+            caption.FontSize = 14;
 
-                var caption = new TextBlock();
-                caption.Text = captionText;
-                caption.Effect = new DropShadowEffect() { ShadowDepth = 4, Color = Colors.Black, BlurRadius = 4 };
-                caption.Foreground = Brushes.White;
-                caption.FontWeight = FontWeights.Bold;
-                caption.FontSize = 14;
-
-                //caption.Background = Brushes.White;
-                Canvas.SetLeft(caption, 10 + child.BoundingRectangle.Left * factor);
-                Canvas.SetTop(caption, 15 + child.BoundingRectangle.Top * factor);
-                Canvas.Children.Add(caption);
-                CaptionElements.Add(captionText, new() { caption, rectangle });
-            }
+            //caption.Background = Brushes.White;
+            Canvas.SetLeft(caption, 10 + element.BoundingRectangle.Left * factor);
+            Canvas.SetTop(caption, 15 + element.BoundingRectangle.Top * factor);
+            Canvas.Children.Add(caption);
+            CaptionElements.Add(captionText, new() { caption, rectangle });
         }
 
-
-        async IAsyncEnumerable<AutomationElement> EnumerateElements(AutomationElement element, int depth = 0)
-        {
-            if (depth > 3)
-            {
-                yield break;
-            }
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            var result = element.FindAll(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
-            stopwatch.Stop();
-            Debug.WriteLine($"time for depth {depth}: {stopwatch.ElapsedMilliseconds}");
-
-            foreach (AutomationElement child in result)
-            {
-                bool isControlOffscreen1;
-                object isOffscreenNoDefault =
-                    child.GetCurrentPropertyValue(AutomationElement.IsOffscreenProperty, false);
-                if (isOffscreenNoDefault != AutomationElement.NotSupported)
-                {
-                    isControlOffscreen1 = (bool)isOffscreenNoDefault;
-                    if (!isControlOffscreen1 && child.Current.IsControlElement && child.Current.BoundingRectangle.Left != double.PositiveInfinity &&
-                            child.Current.BoundingRectangle.Top != double.PositiveInfinity &&
-                            child.Current.BoundingRectangle.Width != double.PositiveInfinity &&
-                                child.Current.BoundingRectangle.Height != double.PositiveInfinity)
-                    {
-                        yield return child;
-                        await foreach (var childElement in EnumerateElements(child, depth + 1))
-                        {
-                            yield return childElement;
-                        }
-                    }
-                }
-            }
-        }
     }
 }

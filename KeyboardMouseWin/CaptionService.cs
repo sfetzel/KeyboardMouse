@@ -13,10 +13,10 @@ namespace KeyboardMouseWin
     public class CaptionService
     {
         public static int CharacterCount { get; } = 26;
-        public Dictionary<string, CaptionedElement> CurrentObjects { get; set; } = new();
+        public Dictionary<string, IUIElement> CurrentObjects { get; set; } = new();
         public int CharCount { get; set; }
 
-        public void AddObjects(IEnumerable<CaptionedElement> elements)
+        public void AddObjects(IEnumerable<IUIElement> elements)
         {
             CurrentObjects.Clear();
             var elementCount = elements.Count();
@@ -47,11 +47,11 @@ namespace KeyboardMouseWin
             }
         }
 
-        public IEnumerable<KeyValuePair<string, CaptionedElement>> GetFilteredOut(char c, int index)
+        public IEnumerable<KeyValuePair<string, IUIElement>> GetFilteredOut(char c, int index)
         {
             if (index >= CharCount)
             {
-                return Enumerable.Empty<KeyValuePair<string, CaptionedElement>>();
+                return Enumerable.Empty<KeyValuePair<string, IUIElement>>();
             }
             return CurrentObjects.Where(pair => pair.Key[index] != c);
         }
