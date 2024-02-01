@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:KeyboardMouseWin"
         mc:Ignorable="d"
         WindowStyle="None" WindowState="Maximized" 
-        Background="Transparent" AllowsTransparency="True"
+        Opacity="0.5"
+        Background="Blue" AllowsTransparency="True"
         Title="MainWindow" Topmost="True">
     <Canvas x:Name="Canvas" Background="Transparent">
         <Rectangle Canvas.Left="0" Canvas.Top="0" Width="20" Height="30" Stroke="Red" StrokeThickness="1"></Rectangle>
