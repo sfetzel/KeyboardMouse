@@ -35,11 +35,14 @@ namespace KeyboardMouseWin
 
                     charIndices[charCount - 1] += 1;
                     var i = charCount - 1;
-                    while (charIndices[i] >= CharacterCount)
+                    while (i >= 0 && charIndices[i] >= CharacterCount)
                     {
                         charIndices[i] = 0;
                         --i;
-                        charIndices[i] += 1;
+                        if (i >= 0)
+                        {
+                            charIndices[i] += 1;
+                        }
                     }
                 }
             }
