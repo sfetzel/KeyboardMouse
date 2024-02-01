@@ -29,7 +29,7 @@ namespace KeyboardMouseWin
         private CaptionService CaptionService = new();
 
         private int characterIndex = 0;
-        private IUIElementProvider elementProvider = new AutomationElementProvider();
+        private IUIElementProvider elementProvider = new FlauiProvider();
 
         private EventSimulator simulator;
 
