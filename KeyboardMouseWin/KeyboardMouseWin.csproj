@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <PackageReference Include="SharpHook" Version="5.2.0" />
-    <PackageReference Include="SimWinMouse" Version="1.0.2" />
     <PackageReference Include="System.Reactive.Async" Version="6.0.0-alpha.18" />
   </ItemGroup>
 

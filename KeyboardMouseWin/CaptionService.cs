@@ -19,8 +19,14 @@ namespace KeyboardMouseWin
         public void AddObjects(IEnumerable<CaptionedElement> elements)
         {
             CurrentObjects.Clear();
+            var elementCount = elements.Count();
+            if(elementCount == 0)
+            {
+                return;
+            }
+
             // The count of characters we need for captioning is 26^k > #elements.
-            CharCount = (int)Math.Ceiling(Math.Log10(elements.Count()) / Math.Log10(CharacterCount));
+            CharCount = (int)Math.Ceiling(Math.Log10(elementCount) / Math.Log10(CharacterCount));
             var iterator = elements.GetEnumerator();
             var charIndices = new int[CharCount];
 

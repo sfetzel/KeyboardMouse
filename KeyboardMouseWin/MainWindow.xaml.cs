@@ -35,13 +35,18 @@ namespace KeyboardMouseWin
         {
             var hook = new TaskPoolGlobalHook();
             var simulator = new EventSimulator();
-            void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
+            async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
             {
                 Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
                 var key = char.ToUpper((char)e.Data.RawCode);
                 if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEscape)
                 {
-                    Dispatcher.Invoke(async () =>
+                    var elements = new List<AutomationElement>();
+                    await foreach (var element in EnumerateElements(AutomationElement.RootElement, 0))
+                    {
+                        elements.Add(element);
+                    }
+                    Dispatcher.Invoke(() =>
                     {
                         captionedElements.Clear();
                         Canvas.Children.Clear();
@@ -50,11 +55,6 @@ namespace KeyboardMouseWin
                         if (CaptionService.CurrentObjects.Count == 0)
                         {
                             characterIndex = 0;
-                            var elements = new List<AutomationElement>();
-                            await foreach(var element in EnumerateElements(AutomationElement.RootElement, 0))
-                            {
-                                elements.Add(element);
-                            }
 
                             CaptionService.AddObjects(elements.Select(x => new CaptionedElement() { UiElement = x }));
                             foreach ((var key, var element) in CaptionService.CurrentObjects)
@@ -106,19 +106,21 @@ namespace KeyboardMouseWin
                         uiElement.TryGetClickablePoint(out var clickablePoint);
                         if (clickablePoint.X != 0 && clickablePoint.Y != 0)
                         {
-                            //simulator.SimulateMousePress((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
-                            //simulator.SimulateMouseRelease((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
+                            Dispatcher.Invoke(() =>
+                            {
+                                // hide the window such that keyboard event go again to the active window and
+                                // the click actually works.
+                                Hide();
 
-                            SimWinInput.SimMouse.Act(SimWinInput.SimMouse.Action.LeftButtonDown, (int)clickablePoint.X, (int)clickablePoint.Y);
-                            Thread.Sleep(100);
-                            SimWinInput.SimMouse.Act(SimWinInput.SimMouse.Action.LeftButtonUp, (int)clickablePoint.X, (int)clickablePoint.Y);
+                                simulator.SimulateMousePress((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
+                                simulator.SimulateMouseRelease((short)clickablePoint.X, (short)clickablePoint.Y, SharpHook.Native.MouseButton.Button1, 1);
+                            });
                         }
 
                         CaptionService.CurrentObjects.Clear();
                         Dispatcher.InvokeAsync(() => CaptionElements.First().Value.ForEach(captionElement => Canvas.Children.Clear()));
 
-                        // hide the window such that keyboard event go again to the active window.
-                        Dispatcher.InvokeAsync(Hide);
+                        
 
                     }
                     ++characterIndex;
@@ -173,13 +175,13 @@ namespace KeyboardMouseWin
             {
                 yield break;
             }
-            var result = element.FindAll(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
+            var result = element.FindAll(TreeScope.Children, new System.Windows.Automation.PropertyCondition(AutomationElement.IsOffscreenProperty, false));
 
             foreach (AutomationElement child in result)
             {
                 bool isControlOffscreen1;
                 object isOffscreenNoDefault =
-                    child.GetCurrentPropertyValue(AutomationElement.IsOffscreenProperty, true);
+                    child.GetCurrentPropertyValue(AutomationElement.IsOffscreenProperty, false);
                 if (isOffscreenNoDefault != AutomationElement.NotSupported)
                 {
                     isControlOffscreen1 = (bool)isOffscreenNoDefault;
