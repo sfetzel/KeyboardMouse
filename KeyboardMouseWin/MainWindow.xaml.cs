@@ -19,6 +19,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Collections.Concurrent;
+using System.Collections;
 
 namespace KeyboardMouseWin
 {
@@ -31,7 +33,7 @@ namespace KeyboardMouseWin
 
         private int characterIndex = 0;
         private IUIElementProvider elementProvider = new FlauiProvider();
-
+        private bool isShiftDown = false;
         private EventSimulator simulator;
 
         public MainWindow()
@@ -40,15 +42,28 @@ namespace KeyboardMouseWin
             simulator = new EventSimulator();
 
             hook.KeyPressed += Hook_KeyPressed;
+            hook.KeyReleased += Hook_KeyReleased;
             hook.RunAsync();
             InitializeComponent();
             Hide();
+        }
+
+        private void Hook_KeyReleased(object? sender, KeyboardHookEventArgs e)
+        {
+            if(e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift)
+            {
+                isShiftDown = false;
+            }
         }
 
         async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
         {
             Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
             var pressedKey = char.ToUpper((char)e.Data.RawCode);
+            if(e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift)
+            {
+                isShiftDown = true;
+            }
             if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEscape)
             {
                 ClearScreen();
@@ -87,26 +102,36 @@ namespace KeyboardMouseWin
                 ++characterIndex;
                 if (CaptionService.CurrentObjects.Count == 1)
                 {
-                    //await ClickFirstElement();
-
-                    var root = CaptionService.CurrentObjects.First();
-                    var newObjects = elementProvider.GetSubElements(root.Value).ToBlockingEnumerable();
-
-                    if (newObjects.Any()) // if there are subelements, then display them.
-                    {
-                        CaptionService.CurrentObjects.Clear();
-                        characterIndex = 0;
-                        ClearScreen();
-                        var newKeys = CaptionService.AddObjects(newObjects);
-                        foreach (var obj in newKeys)
-                        {
-                            await Dispatcher.InvokeAsync(() => CaptionElement(obj, CaptionService.CurrentObjects[obj]));
-                        }
-                    }
-                    else
+                    if (isShiftDown)
                     {
                         await ClickFirstElement();
                     }
+                    else
+                    {
+                        var root = CaptionService.CurrentObjects.First();
+                        var newObjects = elementProvider.GetSubElements(root.Value).ToBlockingEnumerable();
+
+                        if (newObjects.Any()) // if there are subelements, then display them.
+                        {
+                            CaptionService.CurrentObjects.Clear();
+                            characterIndex = 0;
+                            ClearScreen();
+                            var newKeys = CaptionService.AddObjects(newObjects);
+                            foreach (var obj in newKeys)
+                            {
+                                await Dispatcher.InvokeAsync(() => CaptionElement(obj, CaptionService.CurrentObjects[obj]));
+                            }
+                        }
+                        else
+                        {
+                            await ClickFirstElement();
+                        }
+                    }
+                }
+                else if (CaptionService.CurrentObjects.Count == 0)
+                {
+                    ClearScreen();
+                    await Dispatcher.InvokeAsync(Hide);
                 }
             }
             else if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEnter)
@@ -156,6 +181,43 @@ namespace KeyboardMouseWin
             CaptionService.CurrentObjects.Clear();
         }
 
+        private async Task<IEnumerable<IUIElement>> GetSubElements(IUIElement element)
+        {
+            var tokenSource = new CancellationTokenSource();
+            var token = tokenSource.Token;
+            tokenSource.CancelAfter(5);
+
+            ConcurrentBag<IUIElement> results = new();
+            ConcurrentQueue<IUIElement> queue = new();
+
+            queue.Enqueue(element);
+            try
+            {
+                while (queue.TryPeek(out var result))
+                {
+                    await Task.Run(async () =>
+                    {
+                        await foreach (var item in elementProvider.GetSubElements(result))
+                        {
+                            queue.Enqueue(item);
+                            results.Add(item);
+
+                            if (token.IsCancellationRequested)
+                            {
+                                return;
+                            }
+                        }
+                    }, token);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+
+            }
+
+            return results;
+        }
+
         private async Task CaptionUiElements()
         {
             var watch = new Stopwatch();
@@ -163,6 +225,7 @@ namespace KeyboardMouseWin
             await foreach (var element in elementProvider.GetElementsOfActiveWindow())
             {
                 elements.Add(element);
+                elements.AddRange(await GetSubElements(element));
             }
 
             characterIndex = 0;
@@ -201,9 +264,18 @@ namespace KeyboardMouseWin
             caption.FontWeight = FontWeights.Bold;
             caption.FontSize = 14;
 
-            //caption.Background = Brushes.White;
-            Canvas.SetLeft(caption, 10 + element.BoundingRectangle.Left * factor);
-            Canvas.SetTop(caption, 15 + element.BoundingRectangle.Top * factor);
+            var x = 10 + (element.BoundingRectangle.Left) * factor;
+            var y = 15 + (element.BoundingRectangle.Top) * factor;
+            if (element.BoundingRectangle.Width > 30)
+            {
+                x += 10;
+            }
+            if (element.BoundingRectangle.Height > 30)
+            {
+                y += 10;
+            }
+            Canvas.SetLeft(caption, x);
+            Canvas.SetTop(caption, y);
             Canvas.Children.Add(caption);
 
             CaptionElements.Add(captionText, new() { caption, rectangle });
