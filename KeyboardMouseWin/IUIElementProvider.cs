@@ -9,8 +9,8 @@ namespace KeyboardMouseWin
 {
     public interface IUIElementProvider
     {
-        public IAsyncEnumerable<IUIElement> GetElementsOfActiveWindow();
+        public IEnumerable<IUIElement> GetElementsOfActiveWindow();
 
-        public IAsyncEnumerable<IUIElement> GetSubElements(IUIElement element);
+        public IEnumerable<IUIElement> GetSubElements(IUIElement element);
     }
 }

@@ -16,7 +16,7 @@ namespace KeyboardMouseWin
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
-        public async IAsyncEnumerable<IUIElement> GetElementsOfActiveWindow()
+        public IEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
             using (var automation = new UIA3Automation())
             {
@@ -26,7 +26,7 @@ namespace KeyboardMouseWin
                 var descendants = window.FindAllChildren().AsParallel().Select(
                     element => new FlauiUiElement(element));
                 stopwatch.Stop();
-                Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
+                //Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
                 foreach(var element in descendants)
                 {
                     yield return element;
@@ -34,7 +34,7 @@ namespace KeyboardMouseWin
             }
         }
 
-        public async IAsyncEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
+        public IEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
         {
             if (rootElement is FlauiUiElement flauiElement)
             {
@@ -45,7 +45,7 @@ namespace KeyboardMouseWin
                     var descendants = flauiElement.Element.FindAllChildren().AsParallel().Select(
                         element => new FlauiUiElement(element));
                     stopwatch.Stop();
-                    Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
+                    //Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
                     foreach (var element in descendants)
                     {
                         yield return element;

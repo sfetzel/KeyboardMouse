@@ -13,35 +13,35 @@ namespace KeyboardMouseWin
     {
         public int MaxDepth { get; set; } = 2;
 
-        public async IAsyncEnumerable<AutomationElement> EnumerateElements(AutomationElement element, int depth)
+        public IEnumerable<AutomationElement> EnumerateElements(AutomationElement element, int depth)
         {
-            if (depth > MaxDepth)
+            if (depth <= MaxDepth)
             {
-                yield break;
-            }
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            var result = element.FindAll(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
-            stopwatch.Stop();
-            Debug.WriteLine($"time for depth {depth}: {stopwatch.ElapsedMilliseconds}");
 
-            foreach (AutomationElement child in result)
-            {
-                bool isControlOffscreen1;
-                object isOffscreenNoDefault =
-                    child.GetCurrentPropertyValue(AutomationElement.IsOffscreenProperty, false);
-                if (isOffscreenNoDefault != AutomationElement.NotSupported)
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                var result = element.FindAll(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
+                stopwatch.Stop();
+                Debug.WriteLine($"time for depth {depth}: {stopwatch.ElapsedMilliseconds}");
+
+                foreach (AutomationElement child in result)
                 {
-                    isControlOffscreen1 = (bool)isOffscreenNoDefault;
-                    if (!isControlOffscreen1 && child.Current.IsControlElement && child.Current.BoundingRectangle.Left != double.PositiveInfinity &&
-                            child.Current.BoundingRectangle.Top != double.PositiveInfinity &&
-                            child.Current.BoundingRectangle.Width != double.PositiveInfinity &&
-                                child.Current.BoundingRectangle.Height != double.PositiveInfinity)
+                    bool isControlOffscreen1;
+                    object isOffscreenNoDefault =
+                        child.GetCurrentPropertyValue(AutomationElement.IsOffscreenProperty, false);
+                    if (isOffscreenNoDefault != AutomationElement.NotSupported)
                     {
-                        yield return child;
-                        await foreach (var childElement in EnumerateElements(child, depth + 1))
+                        isControlOffscreen1 = (bool)isOffscreenNoDefault;
+                        if (!isControlOffscreen1 && child.Current.IsControlElement && child.Current.BoundingRectangle.Left != double.PositiveInfinity &&
+                                child.Current.BoundingRectangle.Top != double.PositiveInfinity &&
+                                child.Current.BoundingRectangle.Width != double.PositiveInfinity &&
+                                    child.Current.BoundingRectangle.Height != double.PositiveInfinity)
                         {
-                            yield return childElement;
+                            yield return child;
+                            foreach (var childElement in EnumerateElements(child, depth + 1))
+                            {
+                                yield return childElement;
+                            }
                         }
                     }
                 }
@@ -51,10 +51,10 @@ namespace KeyboardMouseWin
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
-        public async IAsyncEnumerable<IUIElement> GetElementsOfActiveWindow()
+        public IEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
             var root = AutomationElement.FromHandle(GetForegroundWindow());
-            await foreach (var element in EnumerateElements(root, 0))
+            foreach (var element in EnumerateElements(root, 0))
             {
                 AutomationUiElement? uiElement = null;
                 try
@@ -72,11 +72,11 @@ namespace KeyboardMouseWin
             }
         }
 
-        public async IAsyncEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
+        public IEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
         {
             if (rootElement is AutomationUiElement automationElement)
             {
-                await foreach (var element in EnumerateElements(automationElement.Element, 0))
+                foreach (var element in EnumerateElements(automationElement.Element, 0))
                 {
                     AutomationUiElement? uiElement = null;
                     try

@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections.Concurrent;
 using System.Collections;
+using SharpHook.Native;
 
 namespace KeyboardMouseWin
 {
@@ -33,8 +34,10 @@ namespace KeyboardMouseWin
 
         private int characterIndex = 0;
         private IUIElementProvider elementProvider = new FlauiProvider();
-        private bool isShiftDown = false;
+        private List<KeyCode> downKeys = new();
         private EventSimulator simulator;
+
+        private bool isShiftDown => downKeys.Contains(KeyCode.VcLeftShift);
 
         public MainWindow()
         {
@@ -50,21 +53,25 @@ namespace KeyboardMouseWin
 
         private void Hook_KeyReleased(object? sender, KeyboardHookEventArgs e)
         {
-            if(e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift)
-            {
-                isShiftDown = false;
-            }
+            downKeys.Remove(e.Data.KeyCode);
         }
 
         async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
         {
             Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
             var pressedKey = char.ToUpper((char)e.Data.RawCode);
-            if(e.Data.KeyCode == SharpHook.Native.KeyCode.VcLeftShift)
+            downKeys.Add(e.Data.KeyCode);
+            if (e.Data.KeyCode == KeyCode.VcEscape)
             {
-                isShiftDown = true;
+                if (CaptionService.CurrentObjects.Count > 0)
+                {
+                    ClearScreen();
+                    CaptionService.CurrentObjects.Clear();
+                    await Dispatcher.InvokeAsync(Hide);
+                }
             }
-            if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEscape)
+            if (downKeys.Contains(KeyCode.VcLeftControl) && downKeys.Contains(KeyCode.VcLeftAlt)
+                && downKeys.Contains(KeyCode.VcW))
             {
                 ClearScreen();
 
@@ -109,7 +116,7 @@ namespace KeyboardMouseWin
                     else
                     {
                         var root = CaptionService.CurrentObjects.First();
-                        var newObjects = elementProvider.GetSubElements(root.Value).ToBlockingEnumerable();
+                        var newObjects = GetSubElements(root.Value);
 
                         if (newObjects.Any()) // if there are subelements, then display them.
                         {
@@ -163,9 +170,11 @@ namespace KeyboardMouseWin
                         // hide the window such that keyboard event go again to the active window and
                         // the click actually works.
                         Hide();
-
-                        simulator.SimulateMousePress((short)uiElement.ClickPoint.Value.X, (short)uiElement.ClickPoint.Value.Y, SharpHook.Native.MouseButton.Button1, 1);
-                        simulator.SimulateMouseRelease((short)uiElement.ClickPoint.Value.X, (short)uiElement.ClickPoint.Value.Y, SharpHook.Native.MouseButton.Button1, 1);
+                        (var scalingX, var scalingY) = GetDpiScaling();
+                        var x = (short)(uiElement.ClickPoint.Value.X / scalingX);
+                        var y = (short)(uiElement.ClickPoint.Value.Y / scalingY);
+                        simulator.SimulateMousePress(x, y, SharpHook.Native.MouseButton.Button1, 1);
+                        simulator.SimulateMouseRelease(x, y, SharpHook.Native.MouseButton.Button1, 1);
                     });
                 }
                 await Dispatcher.InvokeAsync(() =>
@@ -181,53 +190,73 @@ namespace KeyboardMouseWin
             CaptionService.CurrentObjects.Clear();
         }
 
-        private async Task<IEnumerable<IUIElement>> GetSubElements(IUIElement element)
+        private async Task ProcessElement(ConcurrentBag<IUIElement> elements, IUIElement element, CancellationToken token)
+        {
+            var subElements = elementProvider.GetSubElements(element);
+
+            foreach (var item in subElements)
+            {
+                elements.Add(item);
+            }
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+            foreach (var item in subElements)
+            {
+                await ProcessElement(elements, item, token);
+            }
+
+        }
+
+        private IEnumerable<IUIElement> GetSubElements(IUIElement element)
         {
             var tokenSource = new CancellationTokenSource();
             var token = tokenSource.Token;
-            tokenSource.CancelAfter(5);
 
             ConcurrentBag<IUIElement> results = new();
-            ConcurrentQueue<IUIElement> queue = new();
-
-            queue.Enqueue(element);
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             try
             {
-                while (queue.TryPeek(out var result))
+                var task = Task.Run(async () =>
                 {
-                    await Task.Run(async () =>
-                    {
-                        await foreach (var item in elementProvider.GetSubElements(result))
-                        {
-                            queue.Enqueue(item);
-                            results.Add(item);
+                    await ProcessElement(results, element, token);
+                }, token);
+                tokenSource.CancelAfter(20);
+                Thread.Sleep(20);
+            }
+            catch (AggregateException)
+            {
 
-                            if (token.IsCancellationRequested)
-                            {
-                                return;
-                            }
-                        }
-                    }, token);
-                }
             }
             catch (TaskCanceledException)
             {
 
             }
+            stopwatch.Stop();
 
             return results;
         }
 
         private async Task CaptionUiElements()
         {
-            var watch = new Stopwatch();
+            var stopwatch = new Stopwatch();
+            var windowChildren = elementProvider.GetElementsOfActiveWindow().ToList();
+            stopwatch.Start();
             var elements = new List<IUIElement>();
-            await foreach (var element in elementProvider.GetElementsOfActiveWindow())
+            Parallel.ForEach(windowChildren, (element) =>
             {
                 elements.Add(element);
-                elements.AddRange(await GetSubElements(element));
-            }
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                elements.AddRange(GetSubElements(element));
+                stopwatch.Stop();
+                Debug.WriteLine($"get sub elements took {stopwatch.ElapsedMilliseconds}");
+            });
 
+            stopwatch.Stop();
+            Debug.WriteLine($"get elements took {stopwatch.ElapsedMilliseconds}");
             characterIndex = 0;
 
             CaptionService.AddObjects(elements);
@@ -279,6 +308,20 @@ namespace KeyboardMouseWin
             Canvas.Children.Add(caption);
 
             CaptionElements.Add(captionText, new() { caption, rectangle });
+        }
+
+        private (double scalingX, double scalingY) GetDpiScaling()
+        {
+            double scalingX = 1;
+            double scalingY = 1;
+            PresentationSource presentationsource = PresentationSource.FromVisual(this);
+
+            if (presentationsource != null) // make sure it's connected
+            {
+                scalingX = presentationsource.CompositionTarget.TransformToDevice.M11;
+                scalingY = presentationsource.CompositionTarget.TransformToDevice.M22;
+            }
+            return (scalingX, scalingY);
         }
 
     }
