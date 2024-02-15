@@ -54,5 +54,16 @@ namespace KeyboardMouseWin
             return CurrentObjects.Where(pair => pair.Key.Length > index && pair.Key[index] != c);
         }
 
+        /// <summary>
+        /// Remove all elements with the specified keys.
+        /// </summary>
+        /// <param name="keys"></param>
+        public void Remove(IEnumerable<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                CurrentObjects.Remove(key);
+            }
+        }
     }
 }
