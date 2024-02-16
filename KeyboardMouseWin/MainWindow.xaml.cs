@@ -31,14 +31,16 @@ namespace KeyboardMouseWin
 
         public MainWindow()
         {
-            var hook = new TaskPoolGlobalHook();
             simulator = new EventSimulator();
 
-            hook.KeyPressed += Hook_KeyPressed;
-            hook.KeyReleased += Hook_KeyReleased;
-            hook.RunAsync();
             InitializeComponent();
             Hide();
+        }
+
+        public void RegisterHook(IGlobalHook hook)
+        {
+            hook.KeyPressed += Hook_KeyPressed;
+            hook.KeyReleased += Hook_KeyReleased;
         }
 
         private void Hook_KeyReleased(object? sender, KeyboardHookEventArgs e)
@@ -173,15 +175,28 @@ namespace KeyboardMouseWin
             {
                 var uiElementPair = CaptionService.CurrentObjects.First();
                 var uiElement = uiElementPair.Value;
-                if (uiElement.ClickPoint.HasValue)
+
+                Point? clickPoint;
+                if (Settings.Default.ClickOnCenterOfBoundingRectangle)
                 {
+                    // use center of bounding rectangle instead of click point.
+                    // The click point is not always correct.
+                    clickPoint = new Point(uiElement.BoundingRectangle.X + uiElement.BoundingRectangle.Width / 2,
+                                    uiElement.BoundingRectangle.Y + uiElement.BoundingRectangle.Height / 2);
+                }
+                else
+                {
+                    clickPoint = uiElement.ClickPoint;
+                }
+                if (clickPoint.HasValue)
+                { 
                     await Dispatcher.InvokeAsync(() =>
                     {
                         // hide the window such that keyboard event goes again to the active window and
                         // the click actually works.
                         Hide();
                         Debug.WriteLine($"Click on {uiElementPair.Key}, isDoubleClick: {isDoubleClick}");
-                        ClickOnPoint(isDoubleClick, uiElement.ClickPoint.Value);
+                        ClickOnPoint(isDoubleClick, clickPoint.Value);
                     });
                 }
             }
@@ -191,6 +206,7 @@ namespace KeyboardMouseWin
         {
             var currentPosition = Mouse.Position;
             (var scalingX, var scalingY) = GetDpiScaling();
+            Debug.WriteLine($"Using scaling: x: {scalingX}, y:{scalingY}");
             var x = (short)(clickPoint.X / scalingX);
             var y = (short)(clickPoint.Y / scalingY);
             var clickCount = isDoubleClick ? 2 : 1;
