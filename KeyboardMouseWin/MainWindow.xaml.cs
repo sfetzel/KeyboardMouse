@@ -18,15 +18,16 @@ namespace KeyboardMouseWin
     public partial class MainWindow : Window
     {
         private CaptionService CaptionService = new();
+        private Settings Settings = Settings.Default;
 
         private int characterIndex = 0;
         private IUIElementProvider elementProvider = new FlauiProvider();
-        private HashSet<KeyCode> downKeys = new();
+        private HashSet<ushort> downKeys = new();
         private readonly EventSimulator simulator;
 
-        private bool isShiftDown => downKeys.Contains(KeyCode.VcLeftShift);
+        private bool isShiftDown => downKeys.Contains((ushort)KeyCode.VcLeftShift);
 
-        private bool isControlDown => downKeys.Contains(KeyCode.VcLeftControl);
+        private bool isControlDown => downKeys.Contains((ushort)KeyCode.VcLeftControl);
 
         public MainWindow()
         {
@@ -42,15 +43,16 @@ namespace KeyboardMouseWin
 
         private void Hook_KeyReleased(object? sender, KeyboardHookEventArgs e)
         {
-            downKeys.Remove(e.Data.KeyCode);
+            downKeys.Remove((ushort)e.Data.KeyCode);
             Debug.WriteLine($"Key released: {e.Data.KeyCode}");
         }
 
         async void Hook_KeyPressed(object? sender, KeyboardHookEventArgs e)
         {
-            Debug.WriteLine($"key pressed: {e.Data.KeyCode}");
-            var pressedKey = char.ToUpper((char)e.Data.RawCode);
-            downKeys.Add(e.Data.KeyCode);
+            Debug.WriteLine($"key pressed: {e.Data.KeyCode}, {(ushort)e.Data.KeyCode}");
+            var pressedKey = (ushort)e.Data.KeyCode;
+            downKeys.Add(pressedKey);
+            Debug.WriteLine($"pressed keys: {String.Join(",", downKeys)}");
             if (e.Data.KeyCode == KeyCode.VcEscape)
             {
                 // Stop current action if any present.
@@ -58,16 +60,15 @@ namespace KeyboardMouseWin
                 CaptionService.CurrentObjects.Clear();
                 await Dispatcher.InvokeAsync(Hide);
             }
-            else if (downKeys.Contains(KeyCode.VcLeftControl) && downKeys.Contains(KeyCode.VcLeftAlt)
-                && downKeys.Contains(KeyCode.VcW))
+            else if (KeyCombination.FromString(Settings.CaptionKeyCombination).IsPressed(downKeys))
             {
                 // Apply captioning of UI elements.
                 await OnCaptionKeyPressed();
             }
-            else if (CaptionService.CurrentObjects.Count > 0 && 'A' <= pressedKey && pressedKey <= 'Z')
+            else if (CaptionService.CurrentObjects.Count > 0 && 'A' <= (ushort)pressedKey && (ushort)pressedKey <= 'Z')
             {
                 e.SuppressEvent = true;
-                var filteredElements = CaptionService.GetFilteredOut(pressedKey, characterIndex).ToList();
+                var filteredElements = CaptionService.GetFilteredOut((char)pressedKey, characterIndex).ToList();
                 await ApplyFilter(filteredElements.Select(x => x.Key));
             }
             else if (e.Data.KeyCode == SharpHook.Native.KeyCode.VcEnter)

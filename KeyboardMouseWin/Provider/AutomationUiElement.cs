@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Windows.Automation;
 
-namespace KeyboardMouseWin
+namespace KeyboardMouseWin.Provider
 {
     public class AutomationUiElement : IUIElement
     {
