@@ -24,6 +24,12 @@ namespace KeyboardMouseWin
             Hide();
         }
 
+        /// <summary>
+        /// Brings the window to front. Needs to hide base implementation because
+        /// return type must be void for XAML behaviors.
+        /// </summary>
+        public new void Activate() => base.Activate();
+
         private (double scalingX, double scalingY) GetDpiScaling()
         {
             double scalingX = 1;

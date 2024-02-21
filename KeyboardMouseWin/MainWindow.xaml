@@ -16,7 +16,7 @@
         Title="Keyboard Mouse">
     <behaviors:Interaction.Triggers>
         <behaviors:DataTrigger Binding="{Binding IsActive}" Value="True">
-            <!--<behaviors:CallMethodAction MethodName="Activate" TargetObject="{Binding ElementName=CaptionMainWindow}" />-->
+            <behaviors:CallMethodAction MethodName="Activate" TargetObject="{Binding ElementName=CaptionMainWindow}" />
             <behaviors:CallMethodAction MethodName="Show" TargetObject="{Binding ElementName=CaptionMainWindow}" />
         </behaviors:DataTrigger>
         <behaviors:DataTrigger Binding="{Binding IsActive, IsAsync=False, BindsDirectlyToSource=True}" Value="False">

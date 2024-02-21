@@ -153,24 +153,18 @@ namespace KeyboardMouseWin
             else if (KeyCombination.FromString(Settings.CaptionKeyCombination).IsPressed(DownKeys))
             {
                 var handle = WindowsUtils.GetForegroundWindow();
-                WindowsUtils.GetWindowRect(handle, out var rect);
+                UpdateSize(handle);
                 // Apply captioning of UI elements.
                 Clear();
-
-                LeftPosition = Math.Max(rect.Left, 0);
-                TopPosition = Math.Max(rect.Top, 0);
-                Width = rect.Right - rect.Left;
-                Height = rect.Bottom - rect.Top;
 
                 await CaptionUiElements();
 
                 Debug.WriteLine($"Window position: L{LeftPosition}, T:{TopPosition}, W:{Width}, H:{Height}");
-                //var windowHandle = new WindowInteropHelper(Application.Current.MainWindow).Handle;
-                //WindowsUtils.SetWindowPos(windowHandle, 0, rect.Left, rect.Top, width, height, 0);
-
                 // show the window to prevent any keyboard events going to the active
                 // window.
                 IsActive = true;
+                // Update size a second time, otherwise width/height might be incorrect. Reason unknown.
+                UpdateSize(handle);
             }
             else if (CaptionService.CurrentObjects.Count > 0 && letter != null &&
                 'A' <= letter && letter <= 'Z')
@@ -184,6 +178,16 @@ namespace KeyboardMouseWin
                 await ClickFirstElement(isControlDown);
             }
 
+        }
+
+        private void UpdateSize(nint handle)
+        {
+            WindowsUtils.GetWindowRect(handle, out var rect);
+
+            LeftPosition = Math.Max(rect.Left, 0);
+            TopPosition = Math.Max(rect.Top, 0);
+            Width = rect.Right - rect.Left;
+            Height = rect.Bottom - rect.Top;
         }
 
         public async Task HandleKeyUp(Key key)
