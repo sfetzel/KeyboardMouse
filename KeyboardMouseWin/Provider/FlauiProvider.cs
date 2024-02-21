@@ -13,16 +13,13 @@ namespace KeyboardMouseWin
 {
     public class FlauiProvider : IUIElementProvider
     {
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
         public IEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
             using (var automation = new UIA3Automation())
             {
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                var window = automation.FromHandle(GetForegroundWindow());
+                var window = automation.FromHandle(WindowsUtils.GetForegroundWindow());
                 var descendants = window.FindAllChildren().AsParallel().Select(
                     element => new FlauiUiElement(element));
                 stopwatch.Stop();

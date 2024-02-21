@@ -6,10 +6,13 @@
         xmlns:local="clr-namespace:KeyboardMouseWin"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d" d:Width="200" d:Height="200"
-        WindowStyle="None" WindowState="Maximized" 
-        Opacity="0.4" d:DataContext="{d:DesignInstance local:CaptionViewModel }"
-        Background="Blue" AllowsTransparency="True"
-        Name="CaptionMainWindow"
+        WindowStyle="None"
+        d:DataContext="{d:DesignInstance local:CaptionViewModel }"
+        Background="Transparent" AllowsTransparency="True"
+        Name="CaptionMainWindow" 
+        Left="{Binding LeftPosition,Mode=TwoWay}" Top="{Binding TopPosition,Mode=TwoWay}"
+        Width="{Binding Width,Mode=TwoWay}" MinWidth="{Binding Width,Mode=TwoWay}" MaxWidth="{Binding Width,Mode=TwoWay}"
+        Height="{Binding Height,Mode=TwoWay}" MinHeight="{Binding Height,Mode=TwoWay}" MaxHeight="{Binding Height,Mode=TwoWay}"
         Title="Keyboard Mouse">
     <behaviors:Interaction.Triggers>
         <behaviors:DataTrigger Binding="{Binding IsActive}" Value="True">
@@ -22,8 +25,12 @@
         <behaviors:EventTrigger EventName="Deactivated">
             <behaviors:CallMethodAction MethodName="OnWindowHidden" TargetObject="{ Binding }" />
         </behaviors:EventTrigger>
+        <behaviors:EventTrigger EventName="Activated">
+            <behaviors:InvokeCommandAction Command="{Binding }" CommandParameter="{Binding ElementName=CaptionMainWindow}" />
+        </behaviors:EventTrigger>
     </behaviors:Interaction.Triggers>
-    <StackPanel>
+    <!-- ToDo: Make background, rectangle color and font configurable? -->
+    <StackPanel Background="#330000AA">
         <ItemsControl ItemsSource="{Binding CaptionedElements }">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -33,17 +40,17 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemContainerStyle>
                 <Style TargetType="ContentPresenter">
-                    <Setter Property="Canvas.Left" Value="{Binding UiElement.BoundingRectangle.X }"/>
-                    <Setter Property="Canvas.Top" Value="{Binding UiElement.BoundingRectangle.Y }"/>
+                    <Setter Property="Canvas.Left" Value="{Binding BoundingRectangle.X }"/>
+                    <Setter Property="Canvas.Top" Value="{Binding BoundingRectangle.Y }"/>
                 </Style>
             </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Width="{Binding UiElement.BoundingRectangle.Width }" BorderBrush="Red" BorderThickness="1"
-                            Height="{Binding UiElement.BoundingRectangle.Height }">
-                        <TextBlock FontWeight="Bold" Foreground="White" FontSize="14" Text="{Binding Caption}">
+                    <Border Opacity="1" Width="{Binding BoundingRectangle.Width }" BorderBrush="Red" BorderThickness="1"
+                            Height="{Binding BoundingRectangle.Height }">
+                        <TextBlock FontWeight="Bold" Foreground="Yellow" FontSize="14" Text="{Binding Caption}">
                             <TextBlock.Effect>
-                                <DropShadowEffect ShadowDepth="4" Color="Black" BlurRadius="4" />
+                                <DropShadowEffect ShadowDepth="0" Color="Black" BlurRadius="10" />
                             </TextBlock.Effect>
                         </TextBlock>
                     </Border>

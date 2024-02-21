@@ -49,12 +49,9 @@ namespace KeyboardMouseWin
             }
         }
 
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
         public IEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
-            var root = AutomationElement.FromHandle(GetForegroundWindow());
+            var root = AutomationElement.FromHandle(WindowsUtils.GetForegroundWindow());
             foreach (var element in EnumerateElements(root, 0))
             {
                 AutomationUiElement? uiElement = null;

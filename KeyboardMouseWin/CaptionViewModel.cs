@@ -11,30 +11,41 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Mouse = FlaUI.Core.Input.Mouse;
 
 namespace KeyboardMouseWin
 {
+    /// <summary>
+    /// ViewModel which handles keyboard input, captions the UI elements and click on ui elements.
+    /// </summary>
     internal class CaptionViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
+        /// <summary>
+        /// Gets the captioned elements.
+        /// </summary>
         public ObservableCollection<CaptionedUiElement> CaptionedElements
         {
             get => captionedElements;
-            set
+            private set
             {
                 captionedElements = value;
                 NotifyPropertyChanged(nameof(CaptionedElements));
             }
         }
 
-        private void NotifyPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        private void NotifyPropertyChanged(string propertyName)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         private bool isActive;
-
+        /// <summary>
+        /// Indicates whether the caption window is active (shown in foreground). True for active
+        /// and false for inactive (hidden).
+        /// </summary>
         public bool IsActive
         {
             get => isActive;
@@ -45,6 +56,57 @@ namespace KeyboardMouseWin
             }
         }
 
+        private int leftPosition;
+
+        public int LeftPosition
+        {
+            get => leftPosition;
+            set
+            {
+                leftPosition = value;
+                NotifyPropertyChanged(nameof(LeftPosition));
+            }
+        }
+
+        private int topPosition;
+
+        public int TopPosition
+        {
+            get => topPosition;
+            set
+            {
+                topPosition = value;
+                NotifyPropertyChanged(nameof(TopPosition));
+            }
+        }
+
+        private double width;
+
+        public double Width
+        {
+            get => width;
+            set
+            {
+                width = value;
+                NotifyPropertyChanged(nameof(Width));
+            }
+        }
+
+        private double height;
+
+        public double Height
+        {
+            get => height;
+            set
+            {
+                height = value;
+                NotifyPropertyChanged(nameof(Height));
+            }
+        }
+
+
+
+
         private int characterIndex { get; set; } = 0;
         private readonly EventSimulator simulator = new();
 
@@ -52,11 +114,11 @@ namespace KeyboardMouseWin
         private IUIElementProvider elementProvider = new FlauiProvider();
 
         public Settings Settings { get; set; } = Settings.Default;
-
+        public Dispatcher Dispatcher { get; private set; }
         public CaptionViewModel(CaptionService captionService, Dispatcher dispatcher)
         {
             CaptionService = captionService;
-            this.dispatcher = dispatcher;
+            Dispatcher = dispatcher;
         }
 
         public HashSet<Key> DownKeys { get; set; } = new();
@@ -65,9 +127,8 @@ namespace KeyboardMouseWin
 
         private bool isControlDown => DownKeys.Contains(Key.LeftCtrl);
 
-        private Dispatcher dispatcher;
 
-        private Action onHiddenAction;
+        private Action? onHiddenAction = null;
 
         public async Task HandleKeyDown(Key key)
         {
@@ -91,8 +152,25 @@ namespace KeyboardMouseWin
             }
             else if (KeyCombination.FromString(Settings.CaptionKeyCombination).IsPressed(DownKeys))
             {
+                var handle = WindowsUtils.GetForegroundWindow();
+                WindowsUtils.GetWindowRect(handle, out var rect);
                 // Apply captioning of UI elements.
-                await OnCaptionKeyPressed();
+                Clear();
+
+                LeftPosition = Math.Max(rect.Left, 0);
+                TopPosition = Math.Max(rect.Top, 0);
+                Width = rect.Right - rect.Left;
+                Height = rect.Bottom - rect.Top;
+
+                await CaptionUiElements();
+
+                Debug.WriteLine($"Window position: L{LeftPosition}, T:{TopPosition}, W:{Width}, H:{Height}");
+                //var windowHandle = new WindowInteropHelper(Application.Current.MainWindow).Handle;
+                //WindowsUtils.SetWindowPos(windowHandle, 0, rect.Left, rect.Top, width, height, 0);
+
+                // show the window to prevent any keyboard events going to the active
+                // window.
+                IsActive = true;
             }
             else if (CaptionService.CurrentObjects.Count > 0 && letter != null &&
                 'A' <= letter && letter <= 'Z')
@@ -116,20 +194,38 @@ namespace KeyboardMouseWin
 
         public void Clear()
         {
+            characterIndex = 0;
             CaptionService.CurrentObjects.Clear();
             // Clear everything on the screen.
             CaptionedElements = [];
         }
 
+        /// <summary>
+        /// Executes any actions which can only execute when the window is hidden.
+        /// </summary>
         public void OnWindowHidden() => onHiddenAction?.Invoke();
 
+        /// <summary>
+        /// Handles filtering of captioned UI elements.
+        /// </summary>
+        /// <param name="filteredElementKeys">The keys of all UI elements which should be removed.</param>
+        /// <returns></returns>
         private async Task ApplyFilter(IEnumerable<string> filteredElementKeys)
         {
+            var filteredKeys = filteredElementKeys.ToHashSet();
             // remove all filtered elements from UI and caption service.
             CaptionService.Remove(filteredElementKeys);
-            CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
+            var elementsToRemove = CaptionedElements.Where(x => filteredKeys.Contains(x.Caption)).ToList();
+            await Dispatcher.BeginInvoke(() =>
+            {
+                foreach (var elementToRemove in elementsToRemove)
+                {
+                    CaptionedElements.Remove(elementToRemove);
+                }
+            });
 
             ++characterIndex;
+            // If only one element is remaining, either click it or show subelements.
             if (CaptionService.CurrentObjects.Count == 1)
             {
                 if (isShiftDown || isControlDown)
@@ -139,19 +235,20 @@ namespace KeyboardMouseWin
                 }
                 else
                 {
+                    // get subelements if any.
                     var root = CaptionService.CurrentObjects.First();
                     var newObjects = GetListWithSubElements(elementProvider.GetSubElements(root.Value).ToList(), 50);
 
-                    if (newObjects.Count != 0) // if there are subelements, then display them.
+                    // if there are subelements, then display them.
+                    if (newObjects.Count != 0)
                     {
-                        CaptionService.CurrentObjects.Clear();
-                        characterIndex = 0;
                         Clear();
                         CaptionService.SetObjects(newObjects);
                         CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
                     }
                     else
                     {
+                        // if there are no subelements of the only remaining element, then click the element.
                         await ClickFirstElement(isControlDown);
                         Clear();
                     }
@@ -161,21 +258,6 @@ namespace KeyboardMouseWin
             {
                 Clear();
                 IsActive = false;
-            }
-        }
-
-        private async Task OnCaptionKeyPressed()
-        {
-            Clear();
-
-            if (CaptionService.CurrentObjects.Count == 0)
-            {
-                await CaptionUiElements();
-            }
-            else
-            {
-                CaptionService.CurrentObjects.Clear();
-                isActive = false;
             }
         }
 
@@ -217,6 +299,7 @@ namespace KeyboardMouseWin
             var x = (short)(clickPoint.X / scalingX);
             var y = (short)(clickPoint.Y / scalingY);
             var clickCount = isDoubleClick ? 2 : 1;
+            Debug.WriteLine($"Click on x: {x}, y: {y}");
             for (int i = 0; i < clickCount; ++i)
             {
                 simulator.SimulateMousePress(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
@@ -262,11 +345,7 @@ namespace KeyboardMouseWin
                 tokenSource.CancelAfter(timeout);
                 Thread.Sleep(timeout);
             }
-            catch (AggregateException)
-            {
-
-            }
-            catch (TaskCanceledException)
+            catch (Exception exception) when (exception is AggregateException || exception is TaskCanceledException) { }
             {
 
             }
@@ -287,11 +366,8 @@ namespace KeyboardMouseWin
             characterIndex = 0;
 
             CaptionService.SetObjects(elements);
-            CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
-
-            // show the window to prevent any keyboard events going to the active
-            // window.
-            IsActive = true;
+            CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.
+                Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
         }
 
         private List<IUIElement> GetListWithSubElements(List<IUIElement> elementChildren, int timeout = 20)
@@ -314,18 +390,27 @@ namespace KeyboardMouseWin
                 {
                     elements.Add(element);
                 };
-                Debug.WriteLine($"get sub elements took {stopwatch.ElapsedMilliseconds}");
+                //Debug.WriteLine($"get sub elements took {stopwatch.ElapsedMilliseconds}");
             });
             return elements.ToList();
         }
 
         private CaptionedUiElement ToCaptionedElement(string caption, IUIElement element)
-            => new(caption, element);
+        {
+            var captionedElement = new CaptionedUiElement(caption, element);
+            captionedElement.BoundingRectangle = new System.Drawing.Rectangle(
+                captionedElement.BoundingRectangle.X - LeftPosition,
+                captionedElement.BoundingRectangle.Y - TopPosition,
+                captionedElement.BoundingRectangle.Width,
+                captionedElement.BoundingRectangle.Height);
+            return captionedElement;
+        }
 
         private (double scalingX, double scalingY) GetDpiScaling()
         {
             double scalingX = 1;
             double scalingY = 1;
+
             PresentationSource presentationsource = null; //PresentationSource.FromVisual(this);
 
             if (presentationsource != null) // make sure it's connected
