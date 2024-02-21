@@ -3,10 +3,13 @@
   <Profiles />
   <Settings>
     <Setting Name="CaptionKeyCombination" Type="System.String" Scope="User">
-      <Value Profile="(Default)">40977,40978,87</Value>
+      <Value Profile="(Default)">LeftCtrl,LeftAlt,W</Value>
     </Setting>
     <Setting Name="ClickOnCenterOfBoundingRectangle" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ClearKeyCombiantion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Escape</Value>
     </Setting>
   </Settings>
 </SettingsFile>

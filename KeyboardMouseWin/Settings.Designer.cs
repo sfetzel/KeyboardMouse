@@ -25,7 +25,7 @@ namespace KeyboardMouseWin {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("40977,40978,87")]
+        [global::System.Configuration.DefaultSettingValueAttribute("LeftCtrl,LeftAlt,W")]
         public string CaptionKeyCombination {
             get {
                 return ((string)(this["CaptionKeyCombination"]));
@@ -44,6 +44,18 @@ namespace KeyboardMouseWin {
             }
             set {
                 this["ClickOnCenterOfBoundingRectangle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Escape")]
+        public string ClearKeyCombiantion {
+            get {
+                return ((string)(this["ClearKeyCombiantion"]));
+            }
+            set {
+                this["ClearKeyCombiantion"] = value;
             }
         }
     }

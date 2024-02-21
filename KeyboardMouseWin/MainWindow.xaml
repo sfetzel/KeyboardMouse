@@ -4,12 +4,51 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KeyboardMouseWin"
-        mc:Ignorable="d"
+        xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+        mc:Ignorable="d" d:Width="200" d:Height="200"
         WindowStyle="None" WindowState="Maximized" 
-        Opacity="0.5"
+        Opacity="0.4" d:DataContext="{d:DesignInstance local:CaptionViewModel }"
         Background="Blue" AllowsTransparency="True"
+        Name="CaptionMainWindow"
         Title="Keyboard Mouse">
-    <Canvas x:Name="Canvas" Background="Transparent">
-        <Rectangle Canvas.Left="0" Canvas.Top="0" Width="20" Height="30" Stroke="Red" StrokeThickness="1"></Rectangle>
-    </Canvas>
+    <behaviors:Interaction.Triggers>
+        <behaviors:DataTrigger Binding="{Binding IsActive}" Value="True">
+            <!--<behaviors:CallMethodAction MethodName="Activate" TargetObject="{Binding ElementName=CaptionMainWindow}" />-->
+            <behaviors:CallMethodAction MethodName="Show" TargetObject="{Binding ElementName=CaptionMainWindow}" />
+        </behaviors:DataTrigger>
+        <behaviors:DataTrigger Binding="{Binding IsActive, IsAsync=False, BindsDirectlyToSource=True}" Value="False">
+            <behaviors:CallMethodAction MethodName="Hide" TargetObject="{ Binding ElementName=CaptionMainWindow}" />
+        </behaviors:DataTrigger>
+        <behaviors:EventTrigger EventName="Deactivated">
+            <behaviors:CallMethodAction MethodName="OnWindowHidden" TargetObject="{ Binding }" />
+        </behaviors:EventTrigger>
+    </behaviors:Interaction.Triggers>
+    <StackPanel>
+        <ItemsControl ItemsSource="{Binding CaptionedElements }">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas IsItemsHost="True">
+                    </Canvas>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left" Value="{Binding UiElement.BoundingRectangle.X }"/>
+                    <Setter Property="Canvas.Top" Value="{Binding UiElement.BoundingRectangle.Y }"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="{Binding UiElement.BoundingRectangle.Width }" BorderBrush="Red" BorderThickness="1"
+                            Height="{Binding UiElement.BoundingRectangle.Height }">
+                        <TextBlock FontWeight="Bold" Foreground="White" FontSize="14" Text="{Binding Caption}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect ShadowDepth="4" Color="Black" BlurRadius="4" />
+                            </TextBlock.Effect>
+                        </TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
 </Window>

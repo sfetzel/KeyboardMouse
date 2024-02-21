@@ -15,9 +15,13 @@ namespace KeyboardMouseWin
         {
             var hook = new TaskPoolGlobalHook();
             hook.RunAsync();
+            var service = new CaptionService();
             var window = new MainWindow();
+            var viewModel = new CaptionViewModel(service, window.Dispatcher);
+            hook.KeyPressed += async (_, e) => await viewModel.HandleKeyDown(SharpHookConverter.ToKey(e.Data.KeyCode));
+            hook.KeyReleased += async (_, e) => await viewModel.HandleKeyUp(SharpHookConverter.ToKey(e.Data.KeyCode));
+            window.DataContext = viewModel;
             var application = new Application();
-            window.RegisterHook(hook);
             Task.Run(() => window.Dispatcher.Invoke(() => window.Hide()));
             application.Run(window);
         }

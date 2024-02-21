@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
     <PackageReference Include="SharpHook" Version="5.2.0" />
     <PackageReference Include="System.Reactive.Async" Version="6.0.0-alpha.18" />
   </ItemGroup>

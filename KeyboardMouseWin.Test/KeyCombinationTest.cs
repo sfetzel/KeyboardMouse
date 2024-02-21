@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace KeyboardMouseWin.Test
 {
@@ -12,21 +13,21 @@ namespace KeyboardMouseWin.Test
         [TestMethod]
         public void TestToString()
         {
-            var keyCombination = new KeyCombination() { KeyCodes = new() { 12, 45, 9 } };
+            var keyCombination = new KeyCombination() { Keys = new() { Key.Escape, Key.LeftCtrl, Key.A } };
             var actual = keyCombination.ToString();
-            var expected = "12,45,9";
+            var expected = "Escape,LeftCtrl,A";
             Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]
         public void TestFromString()
         {
-            var input = "12,9,, ,,8";
+            var input = "Escape,A,, ,,LeftCtrl";
             var result = KeyCombination.FromString(input);
-            Assert.AreEqual(3, result.KeyCodes.Count);
-            Assert.IsTrue(result.KeyCodes.Contains(12));
-            Assert.IsTrue(result.KeyCodes.Contains(9));
-            Assert.IsTrue(result.KeyCodes.Contains(8));
+            Assert.AreEqual(3, result.Keys.Count);
+            Assert.IsTrue(result.Keys.Contains(Key.Escape));
+            Assert.IsTrue(result.Keys.Contains(Key.A));
+            Assert.IsTrue(result.Keys.Contains(Key.LeftCtrl));
         }
     }
 }

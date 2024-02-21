@@ -13,22 +13,26 @@ namespace KeyboardMouseWin
         /// <summary>
         /// The codes of the keys for this key combination.
         /// </summary>
-        public HashSet<ushort> KeyCodes { get; set; } = new();
+        public HashSet<Key> Keys { get; set; } = new();
 
         public KeyCombination() { }
 
         public static KeyCombination FromString(string inputString)
         {
-            var keyCodeStrings = inputString.Split(KeyCodeSeparator);
+            var keyStrings = inputString.Split(KeyCodeSeparator);
+            
             return new()
             {
-                KeyCodes = keyCodeStrings.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => Convert.ToUInt16(x)).ToHashSet()
+                Keys = keyStrings.Where(x => !string.IsNullOrWhiteSpace(x)).
+                    Select(x => (Key)Enum.Parse(typeof(Key), x)).ToHashSet()
             };
 
         }
 
-        public bool IsPressed(HashSet<ushort> pressedKeys) => KeyCodes.IsSubsetOf(pressedKeys);
+        public bool IsPressed(HashSet<Int32> pressedKeys) => Keys.Select(x => (int)x).ToHashSet().IsSubsetOf(pressedKeys);
 
-        public override string ToString() => String.Join(KeyCodeSeparator, KeyCodes);
+        public bool IsPressed(HashSet<Key> pressedKeys) => Keys.IsSubsetOf(pressedKeys);
+
+        public override string ToString() => String.Join(KeyCodeSeparator, Keys);
     }
 }

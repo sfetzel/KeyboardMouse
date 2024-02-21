@@ -17,7 +17,7 @@ namespace KeyboardMouseWin.Test
             var element2 = new MockUiElement();
             var elements = new[] { element1, element2 };
             var service = new CaptionService();
-            service.AddObjects(elements);
+            service.SetObjects(elements);
             Assert.AreEqual(element1, service.CurrentObjects["A"]);
             Assert.AreEqual(element2, service.CurrentObjects["B"]);
         }
@@ -27,7 +27,7 @@ namespace KeyboardMouseWin.Test
         {
             var elements = Enumerable.Range(0, 27).Select(_ => new MockUiElement()).ToArray();
             var service = new CaptionService();
-            service.AddObjects(elements);
+            service.SetObjects(elements);
             Assert.IsNotNull(service.CurrentObjects["BA"]);
         }
 
@@ -36,7 +36,7 @@ namespace KeyboardMouseWin.Test
         {
             var elements = Enumerable.Range(0, 17576 + 1).Select(_ => new MockUiElement()).ToArray();
             var service = new CaptionService();
-            service.AddObjects(elements);
+            service.SetObjects(elements);
             Assert.IsNotNull(service.CurrentObjects["BAAA"]);
         }
     }
