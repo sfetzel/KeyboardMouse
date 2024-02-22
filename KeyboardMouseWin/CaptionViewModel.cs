@@ -1,22 +1,16 @@
 ﻿using KeyboardMouseWin.Provider;
 using KeyboardMouseWin.Utils;
 using SharpHook;
-using SharpHook.Native;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Threading;
-using System.Xml.Linq;
 using Mouse = FlaUI.Core.Input.Mouse;
+using Point = System.Windows.Point;
 
 namespace KeyboardMouseWin
 {
@@ -112,6 +106,7 @@ namespace KeyboardMouseWin
 
         private int characterIndex { get; set; } = 0;
         private readonly EventSimulator simulator = new();
+        private Rectangle WindowRectangle = new();
 
         public CaptionService CaptionService { get; set; }
         public IUIElementProvider ElementProvider { get; private set; }
@@ -198,6 +193,7 @@ namespace KeyboardMouseWin
             TopPosition = Math.Max(rect.Top, 0);
             Width = rect.Right - rect.Left;
             Height = rect.Bottom - rect.Top;
+            WindowRectangle = new Rectangle(LeftPosition, TopPosition, (int)Width, (int)Height);
         }
 
         public void HandleKeyUp(Key key)
@@ -377,18 +373,27 @@ namespace KeyboardMouseWin
         {
             CaptionService.SetObjects(elements);
             CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.
-                Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
+                Select(pair => ToCaptionedElement(pair.Key, pair.Value)).Where(x => x!= null).Select(x => x!));
 
         }
 
-        private CaptionedUiElement ToCaptionedElement(string caption, IUIElement element)
+        private CaptionedUiElement? ToCaptionedElement(string caption, IUIElement element)
         {
-            var captionedElement = new CaptionedUiElement(caption, element);
-            captionedElement.BoundingRectangle = new System.Drawing.Rectangle(
-                captionedElement.BoundingRectangle.X - LeftPosition,
-                captionedElement.BoundingRectangle.Y - TopPosition,
-                captionedElement.BoundingRectangle.Width,
-                captionedElement.BoundingRectangle.Height);
+            CaptionedUiElement? captionedElement = null;
+            try
+            {
+                captionedElement = new CaptionedUiElement(caption, element);
+                // need to clip rectangle because elements of a scroll view may be larger than the screen.
+                captionedElement.BoundingRectangle = new System.Drawing.Rectangle(
+                    Math.Max(captionedElement.BoundingRectangle.X - LeftPosition, 0),
+                    Math.Max(captionedElement.BoundingRectangle.Y - TopPosition, 0),
+                    captionedElement.BoundingRectangle.Width,
+                    captionedElement.BoundingRectangle.Height);
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"Error when converting to captioned element: {ex.Message}");
+            }
             return captionedElement;
         }
 
