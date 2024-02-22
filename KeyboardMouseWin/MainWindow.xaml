@@ -30,7 +30,7 @@
         </behaviors:EventTrigger>
     </behaviors:Interaction.Triggers>
     <!-- ToDo: Make background, rectangle color and font configurable? -->
-    <StackPanel Background="#330000AA">
+    <StackPanel Background="#220000AA">
         <ItemsControl ItemsSource="{Binding CaptionedElements }">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>

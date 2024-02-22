@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace KeyboardMouseWin
+namespace KeyboardMouseWin.Utils
 {
     public static class SharpHookConverter
     {

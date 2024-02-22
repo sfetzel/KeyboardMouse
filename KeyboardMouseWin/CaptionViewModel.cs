@@ -1,4 +1,6 @@
-﻿using SharpHook;
+﻿using KeyboardMouseWin.Provider;
+using KeyboardMouseWin.Utils;
+using SharpHook;
 using SharpHook.Native;
 using System;
 using System.Collections.Concurrent;
@@ -13,6 +15,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using System.Xml.Linq;
 using Mouse = FlaUI.Core.Input.Mouse;
 
 namespace KeyboardMouseWin
@@ -20,9 +23,11 @@ namespace KeyboardMouseWin
     /// <summary>
     /// ViewModel which handles keyboard input, captions the UI elements and click on ui elements.
     /// </summary>
-    internal class CaptionViewModel : INotifyPropertyChanged
+    public class CaptionViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        public int CaptionTimeLimit { get; } = 100;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>
@@ -105,20 +110,20 @@ namespace KeyboardMouseWin
         }
 
 
-
-
         private int characterIndex { get; set; } = 0;
         private readonly EventSimulator simulator = new();
 
         public CaptionService CaptionService { get; set; }
-        private IUIElementProvider elementProvider = new FlauiProvider();
+        public IUIElementProvider ElementProvider { get; private set; }
 
         public Settings Settings { get; set; } = Settings.Default;
         public Dispatcher Dispatcher { get; private set; }
-        public CaptionViewModel(CaptionService captionService, Dispatcher dispatcher)
+
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher)
         {
             CaptionService = captionService;
             Dispatcher = dispatcher;
+            this.ElementProvider = elementProvider;
         }
 
         public HashSet<Key> DownKeys { get; set; } = new();
@@ -175,11 +180,16 @@ namespace KeyboardMouseWin
             else if (key == Key.Enter)
             {
                 Clear();
-                await ClickFirstElement(isControlDown);
+                ClickFirstElement(isControlDown);
             }
 
         }
 
+        /// <summary>
+        /// Sets the size properties Width, Height and LeftPosition, TopPosition
+        /// from the window with the specified handle.
+        /// </summary>
+        /// <param name="handle">The window from which the size is taken.</param>
         private void UpdateSize(nint handle)
         {
             WindowsUtils.GetWindowRect(handle, out var rect);
@@ -190,7 +200,7 @@ namespace KeyboardMouseWin
             Height = rect.Bottom - rect.Top;
         }
 
-        public async Task HandleKeyUp(Key key)
+        public void HandleKeyUp(Key key)
         {
             Debug.WriteLine($"key up: {key}");
             DownKeys.Remove(key);
@@ -207,7 +217,11 @@ namespace KeyboardMouseWin
         /// <summary>
         /// Executes any actions which can only execute when the window is hidden.
         /// </summary>
-        public void OnWindowHidden() => onHiddenAction?.Invoke();
+        public void OnWindowHidden()
+        {
+            onHiddenAction?.Invoke();
+            onHiddenAction = null;
+        }
 
         /// <summary>
         /// Handles filtering of captioned UI elements.
@@ -219,41 +233,38 @@ namespace KeyboardMouseWin
             var filteredKeys = filteredElementKeys.ToHashSet();
             // remove all filtered elements from UI and caption service.
             CaptionService.Remove(filteredElementKeys);
-            var elementsToRemove = CaptionedElements.Where(x => filteredKeys.Contains(x.Caption)).ToList();
-            await Dispatcher.BeginInvoke(() =>
-            {
-                foreach (var elementToRemove in elementsToRemove)
-                {
-                    CaptionedElements.Remove(elementToRemove);
-                }
-            });
-
+            await FilterCaptionedElements(filteredKeys);
+            Debug.WriteLine($"Filtered {filteredKeys.Count} elements, {CaptionService.CurrentObjects.Count} remaining");
             ++characterIndex;
             // If only one element is remaining, either click it or show subelements.
             if (CaptionService.CurrentObjects.Count == 1)
             {
                 if (isShiftDown || isControlDown)
                 {
-                    await ClickFirstElement(isControlDown);
+                    ClickFirstElement(isControlDown);
                     Clear();
                 }
                 else
                 {
                     // get subelements if any.
                     var root = CaptionService.CurrentObjects.First();
-                    var newObjects = GetListWithSubElements(elementProvider.GetSubElements(root.Value).ToList(), 50);
-
+                    Clear();
                     // if there are subelements, then display them.
-                    if (newObjects.Count != 0)
+                    await CaptionUiElements(ElementProvider.GetSubElements(root.Value));
+
+                    if (CaptionService.CurrentObjects.Count == 0)
                     {
-                        Clear();
-                        CaptionService.SetObjects(newObjects);
-                        CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
-                    }
-                    else
-                    {
+                        Debug.WriteLine($"No subelements, click on {root.Key}");
+                        // undo captioning
+                        CaptionService.CurrentObjects = new() { { root.Key, root.Value } };
                         // if there are no subelements of the only remaining element, then click the element.
-                        await ClickFirstElement(isControlDown);
+                        ClickFirstElement(isControlDown);
+                        Clear();
+                    }
+                    else if(CaptionService.CurrentObjects.Count == 1)
+                    {
+                        // if there is only one child, then click it.
+                        ClickFirstElement(isControlDown);
                         Clear();
                     }
                 }
@@ -265,7 +276,19 @@ namespace KeyboardMouseWin
             }
         }
 
-        private async Task ClickFirstElement(bool isDoubleClick)
+        private async Task FilterCaptionedElements(HashSet<string> filteredKeys)
+        {
+            var elementsToRemove = CaptionedElements.Where(x => filteredKeys.Contains(x.Caption)).ToList();
+            await Dispatcher.BeginInvoke(() =>
+            {
+                foreach (var elementToRemove in elementsToRemove)
+                {
+                    CaptionedElements.Remove(elementToRemove);
+                }
+            });
+        }
+
+        private void ClickFirstElement(bool isDoubleClick)
         {
             if (CaptionService.CurrentObjects.Count > 0)
             {
@@ -313,90 +336,49 @@ namespace KeyboardMouseWin
             Mouse.Position = currentPosition;
         }
 
-        private async Task ProcessElement(ConcurrentBag<IUIElement> elements, IUIElement element, CancellationToken token)
+        public async Task CaptionUiElements() => await CaptionUiElements(ElementProvider.GetElementsOfActiveWindow());
+        
+        /// <summary>
+        /// Gets all subelements until the "CaptionTimeLimit" is exceeded.
+        /// </summary>
+        /// <param name="startingElements"></param>
+        /// <returns></returns>
+        public async Task CaptionUiElements(IEnumerable<IUIElement> startingElements)
         {
-            var subElements = elementProvider.GetSubElements(element);
-
-            foreach (var item in subElements)
+            var elements = new ConcurrentBag<IUIElement>();
+            var executor = new LimitedTimeExecutor(CaptionTimeLimit);
+            async void UpdateElements(IEnumerable<IUIElement> newElements)
             {
-                elements.Add(item);
-            }
-            if (token.IsCancellationRequested)
-            {
-                return;
-            }
-            foreach (var item in subElements)
-            {
-                await ProcessElement(elements, item, token);
-            }
-
-        }
-
-        private IEnumerable<IUIElement> GetSubElements(IUIElement element, int timeout = 20)
-        {
-            var tokenSource = new CancellationTokenSource();
-            var token = tokenSource.Token;
-
-            ConcurrentBag<IUIElement> results = new();
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            try
-            {
-                var task = Task.Run(async () =>
+                if (executor.IsOverLimit)
                 {
-                    await ProcessElement(results, element, token);
-                }, token);
-                tokenSource.CancelAfter(timeout);
-                Thread.Sleep(timeout);
+                    return;
+                }
+                foreach (var element in newElements)
+                {
+                    elements.Add(element);
+                }
+                UpdateCaptionedElements(elements);
+                Debug.WriteLine($"Adding objects at {executor.Stopwatch.ElapsedMilliseconds}");
+                if (!executor.IsOverLimit)
+                {
+                    foreach (var element in newElements)
+                    {
+                        executor.StartNewTask(() => UpdateElements(ElementProvider.GetSubElements(element)));
+                    }
+                }
             }
-            catch (Exception exception) when (exception is AggregateException || exception is TaskCanceledException) { }
-            {
-
-            }
-            stopwatch.Stop();
-
-            return results;
-        }
-
-        private async Task CaptionUiElements()
-        {
-            var stopwatch = new Stopwatch();
-            var windowChildren = elementProvider.GetElementsOfActiveWindow().ToList();
-            stopwatch.Start();
-            List<IUIElement> elements = GetListWithSubElements(windowChildren);
-
-            stopwatch.Stop();
-            Debug.WriteLine($"get elements took {stopwatch.ElapsedMilliseconds}");
+            await executor.Run(() => UpdateElements(startingElements), false);
+            Debug.WriteLine($"get elements took {executor.Stopwatch.ElapsedMilliseconds}, found {CaptionService.CurrentObjects.Count}");
             characterIndex = 0;
 
+        }
+
+        private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)
+        {
             CaptionService.SetObjects(elements);
             CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.
                 Select(pair => ToCaptionedElement(pair.Key, pair.Value)));
-        }
 
-        private List<IUIElement> GetListWithSubElements(List<IUIElement> elementChildren, int timeout = 20)
-        {
-            var elements = new ConcurrentBag<IUIElement>();
-            Parallel.ForEach(elementChildren, (element) =>
-            {
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                var subElements = GetSubElements(element, timeout);
-                var anyElement = false;
-                foreach (var subElement in subElements)
-                {
-                    elements.Add(subElement);
-                    anyElement = true;
-                }
-                stopwatch.Stop();
-
-                if (!anyElement)
-                {
-                    elements.Add(element);
-                };
-                //Debug.WriteLine($"get sub elements took {stopwatch.ElapsedMilliseconds}");
-            });
-            return elements.ToList();
         }
 
         private CaptionedUiElement ToCaptionedElement(string caption, IUIElement element)

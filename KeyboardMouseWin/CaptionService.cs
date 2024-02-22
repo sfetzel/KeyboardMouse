@@ -16,7 +16,7 @@ namespace KeyboardMouseWin
 
         public void SetObjects(IEnumerable<IUIElement> elements, string prefix = "")
         {
-            CurrentObjects = CaptionHelper.CreateCaptions(CurrentObjects.Values.Concat(elements));
+            CurrentObjects = CaptionHelper.CreateCaptions(elements);
         }
 
         public IEnumerable<KeyValuePair<string, IUIElement>> GetFilteredOut(char c, int index)

@@ -13,7 +13,8 @@ namespace KeyboardMouseWin
         public TextBlock TextCaption { get; set; }
         public Rectangle RectangleCaption { get; set; }
 
-        public UiElementCaption(TextBlock textCaption, Rectangle rectangleCaption)        {
+        public UiElementCaption(TextBlock textCaption, Rectangle rectangleCaption)
+        {
             TextCaption = textCaption;
             RectangleCaption = rectangleCaption;
         }

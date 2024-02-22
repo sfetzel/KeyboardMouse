@@ -1,6 +1,8 @@
 ﻿using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.UIA3;
+using KeyboardMouseWin.Provider;
+using KeyboardMouseWin.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

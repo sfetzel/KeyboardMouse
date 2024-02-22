@@ -5,16 +5,16 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KeyboardMouseWin
+namespace KeyboardMouseWin.Utils
 {
     internal class WindowsUtils
     {
         [DllImport("user32.dll")]
-        public static extern IntPtr GetForegroundWindow();
+        public static extern nint GetForegroundWindow();
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+        public static extern bool GetWindowRect(nint hWnd, out RECT lpRect);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -26,10 +26,10 @@ namespace KeyboardMouseWin
         }
 
         [DllImport("user32.dll", EntryPoint = "SetWindowPos")]
-        public static extern IntPtr SetWindowPos(IntPtr hWnd, int hWndInsertAfter, int x, int y, int width, int height, int wFlags);
+        public static extern nint SetWindowPos(nint hWnd, int hWndInsertAfter, int x, int y, int width, int height, int wFlags);
 
         [DllImport("user32.dll", SetLastError = true)]
-        internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+        internal static extern bool MoveWindow(nint hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
 
     }
 }
