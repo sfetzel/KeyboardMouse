@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KeyboardMouseWin"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d" d:Width="200" d:Height="200"
         WindowStyle="None"
         d:DataContext="{d:DesignInstance local:CaptionViewModel }"
@@ -30,7 +31,20 @@
         </behaviors:EventTrigger>
     </behaviors:Interaction.Triggers>
     <!-- ToDo: Make background, rectangle color and font configurable? -->
-    <StackPanel Background="#220000AA">
+    <DockPanel Background="#220000AA">
+        <fa:ImageAwesome DockPanel.Dock="Top" Icon="Refresh" Spin="True" Height="48" Width="48" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Foreground="White">
+            <fa:ImageAwesome.Style>
+                <Style TargetType="{x:Type fa:ImageAwesome}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CaptionedElements.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </fa:ImageAwesome.Style>
+        </fa:ImageAwesome>
         <ItemsControl ItemsSource="{Binding CaptionedElements }">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -46,16 +60,41 @@
             </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Opacity="1" Width="{Binding BoundingRectangle.Width }" BorderBrush="Red" BorderThickness="1"
+                    <Canvas>
+                        <Border Canvas.Left="0" Canvas.Top="0" Opacity="1" Width="{Binding BoundingRectangle.Width }" BorderBrush="Red" BorderThickness="1"
                             Height="{Binding BoundingRectangle.Height }">
-                        <TextBlock FontWeight="Bold" Foreground="Yellow" FontSize="14" Text="{Binding Caption}">
+                        </Border>
+                        <TextBlock Canvas.Left="2" Canvas.Top="-2" Padding="0" Margin="0" FontWeight="Bold" Foreground="Yellow" FontSize="14" Text="{Binding Caption}"
+                                   Name="CaptionText">
                             <TextBlock.Effect>
                                 <DropShadowEffect ShadowDepth="0" Color="Black" BlurRadius="10" />
                             </TextBlock.Effect>
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{ Binding ElementName=CaptionMainWindow,Path=DataContext.IsCaptionVisible }" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <TextBlock.Triggers>
+                                <EventTrigger RoutedEvent="TextBlock.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="CaptionText" 
+                                                Storyboard.TargetProperty="(TextBlock.Opacity)"
+                                                From="0.0" To="1.0" Duration="0:0:0.2" 
+                                                AutoReverse="False" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </TextBlock.Triggers>
                         </TextBlock>
-                    </Border>
+                    </Canvas>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-    </StackPanel>
+    </DockPanel>
 </Window>

@@ -103,6 +103,20 @@ namespace KeyboardMouseWin
             }
         }
 
+        private bool isCaptionVisible;
+        /// <summary>
+        /// Indicates if captions should be visible in the UI.
+        /// </summary>
+        public bool IsCaptionVisible
+        {
+            get => isCaptionVisible;
+            set
+            {
+                isCaptionVisible = value;
+                NotifyPropertyChanged(nameof(IsCaptionVisible));
+            }
+        }
+
 
         private int characterIndex { get; set; } = 0;
         private readonly EventSimulator simulator = new();
@@ -129,13 +143,16 @@ namespace KeyboardMouseWin
 
 
         private Action? onHiddenAction = null;
-
-        public async Task HandleKeyDown(Key key)
+        private KeyConverter keyConverter = new KeyConverter();
+        public async Task HandleKeyDown(Key key, HookEventArgs eventArgs)
         {
             Debug.WriteLine($"key pressed: {key}");
-            var converter = new KeyConverter();
+            if(key == Key.LeftAlt)
+            {
+                IsCaptionVisible = false;
+            }
 
-            var keyString = converter.ConvertToString(key);
+            var keyString = keyConverter.ConvertToString(key);
             char? letter = null;
             if (keyString != null && keyString.Length == 1)
             {
@@ -146,38 +163,40 @@ namespace KeyboardMouseWin
 
             if (KeyCombination.FromString(Settings.ClearKeyCombiantion).IsPressed(DownKeys))
             {
+                eventArgs.SuppressEvent = true;
                 // Stop current action if any present.
                 Clear();
                 IsActive = false;
             }
             else if (KeyCombination.FromString(Settings.CaptionKeyCombination).IsPressed(DownKeys))
             {
+                eventArgs.SuppressEvent = true;
                 var handle = WindowsUtils.GetForegroundWindow();
                 UpdateSize(handle);
                 // Apply captioning of UI elements.
                 Clear();
-
-                await CaptionUiElements();
-
-                Debug.WriteLine($"Window position: L{LeftPosition}, T:{TopPosition}, W:{Width}, H:{Height}");
                 // show the window to prevent any keyboard events going to the active
                 // window.
                 IsActive = true;
+                await CaptionUiElements();
+
+                Debug.WriteLine($"Window position: L{LeftPosition}, T:{TopPosition}, W:{Width}, H:{Height}");
                 // Update size a second time, otherwise width/height might be incorrect. Reason unknown.
                 UpdateSize(handle);
             }
             else if (CaptionService.CurrentObjects.Count > 0 && letter != null &&
                 'A' <= letter && letter <= 'Z')
             {
+                eventArgs.SuppressEvent = true;
                 var filteredElements = CaptionService.GetFilteredOut(letter.Value, characterIndex).ToList();
                 await ApplyFilter(filteredElements.Select(x => x.Key));
             }
             else if (key == Key.Enter)
             {
+                eventArgs.SuppressEvent = true;
                 Clear();
                 ClickFirstElement(isControlDown);
             }
-
         }
 
         /// <summary>
@@ -200,6 +219,11 @@ namespace KeyboardMouseWin
         {
             Debug.WriteLine($"key up: {key}");
             DownKeys.Remove(key);
+
+            if (key == Key.LeftAlt)
+            {
+                IsCaptionVisible = true;
+            }
         }
 
         public void Clear()
@@ -257,7 +281,7 @@ namespace KeyboardMouseWin
                         ClickFirstElement(isControlDown);
                         Clear();
                     }
-                    else if(CaptionService.CurrentObjects.Count == 1)
+                    else if (CaptionService.CurrentObjects.Count == 1)
                     {
                         // if there is only one child, then click it.
                         ClickFirstElement(isControlDown);
@@ -333,7 +357,7 @@ namespace KeyboardMouseWin
         }
 
         public async Task CaptionUiElements() => await CaptionUiElements(ElementProvider.GetElementsOfActiveWindow());
-        
+
         /// <summary>
         /// Gets all subelements until the "CaptionTimeLimit" is exceeded.
         /// </summary>
@@ -371,10 +395,13 @@ namespace KeyboardMouseWin
 
         private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)
         {
-            CaptionService.SetObjects(elements);
-            CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.
-                Select(pair => ToCaptionedElement(pair.Key, pair.Value)).Where(x => x!= null).Select(x => x!));
-
+            // Check if no key has been pressed yet.
+            if (characterIndex == 0)
+            {
+                CaptionService.SetObjects(elements);
+                CaptionedElements = new ObservableCollection<CaptionedUiElement>(CaptionService.CurrentObjects.
+                    Select(pair => ToCaptionedElement(pair.Key, pair.Value)).Where(x => x != null).Select(x => x!));
+            }
         }
 
         private CaptionedUiElement? ToCaptionedElement(string caption, IUIElement element)
@@ -390,7 +417,7 @@ namespace KeyboardMouseWin
                     captionedElement.BoundingRectangle.Width,
                     captionedElement.BoundingRectangle.Height);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine($"Error when converting to captioned element: {ex.Message}");
             }
