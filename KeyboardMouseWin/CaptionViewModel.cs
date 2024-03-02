@@ -1,6 +1,8 @@
 ﻿using KeyboardMouseWin.Provider;
+using KeyboardMouseWin.Service;
 using KeyboardMouseWin.Utils;
 using SharpHook;
+using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -147,7 +149,7 @@ namespace KeyboardMouseWin
         public async Task HandleKeyDown(Key key, HookEventArgs eventArgs)
         {
             Debug.WriteLine($"key pressed: {key}");
-            if(key == Key.LeftAlt)
+            if (key == Key.LeftAlt)
             {
                 IsCaptionVisible = false;
             }
@@ -355,42 +357,23 @@ namespace KeyboardMouseWin
             }
             Mouse.Position = currentPosition;
         }
-
-        public async Task CaptionUiElements() => await CaptionUiElements(ElementProvider.GetElementsOfActiveWindow());
-
-        /// <summary>
-        /// Gets all subelements until the "CaptionTimeLimit" is exceeded.
-        /// </summary>
-        /// <param name="startingElements"></param>
-        /// <returns></returns>
-        public async Task CaptionUiElements(IEnumerable<IUIElement> startingElements)
+        public IElementLookupService ElementLookupServiceFactory()
         {
-            var elements = new ConcurrentBag<IUIElement>();
-            var executor = new LimitedTimeExecutor(CaptionTimeLimit);
-            async void UpdateElements(IEnumerable<IUIElement> newElements)
-            {
-                if (executor.IsOverLimit)
-                {
-                    return;
-                }
-                foreach (var element in newElements)
-                {
-                    elements.Add(element);
-                }
-                UpdateCaptionedElements(elements);
-                Debug.WriteLine($"Adding objects at {executor.Stopwatch.ElapsedMilliseconds}");
-                if (!executor.IsOverLimit)
-                {
-                    foreach (var element in newElements)
-                    {
-                        executor.StartNewTask(() => UpdateElements(ElementProvider.GetSubElements(element)));
-                    }
-                }
-            }
-            await executor.Run(() => UpdateElements(startingElements), false);
-            Debug.WriteLine($"get elements took {executor.Stopwatch.ElapsedMilliseconds}, found {CaptionService.CurrentObjects.Count}");
+            //var legacyElementLookupService = new LegacyElementLookupService(ElementProvider,
+            //    () => new LimitedTimeExecutor(CaptionTimeLimit));
+            //return legacyElementLookupService;
+
+            var lookupService = new ElementLookupService(ElementProvider);
+            return lookupService;
+        }
+        public async Task CaptionUiElements(IEnumerable<IUIElement>? uIElements = null)
+        {
+            var elementLookup = ElementLookupServiceFactory();
             characterIndex = 0;
 
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
+            await elementLookup.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), UpdateCaptionedElements, cancellationTokenSource.Token);
+            //Debug.WriteLine($"get elements took {executor.Stopwatch.ElapsedMilliseconds}, found {CaptionService.CurrentObjects.Count}");
         }
 
         private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)

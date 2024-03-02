@@ -1,4 +1,5 @@
 ﻿using KeyboardMouseWin.Provider;
+using KeyboardMouseWin.Service;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -67,6 +68,27 @@ namespace KeyboardMouseWin.Test
             // 8 elements from GetElementsOfActiveWindow() and for each we again have 8 elements from
             // GetSubElements(), therefore the expected count of elements is 8*8 = 64.
             Assert.AreEqual(Math.Pow(MockElementProvider.elementCount, 2), viewModel.CaptionService.CurrentObjects.Count);
+        }
+        [TestMethod]
+        public async Task CaptionUiElements_ShouldReturnAfterSpecifiedCancellationTokenTimeout()
+        {
+            // Arrange
+            var elementProviderMock = new MockElementProvider();
+            var elementLookupService = new ElementLookupService(elementProviderMock);
+            var expectedMillisecondsTimeout = 2000;
+            var MilliseoncdsTimeoutTolerance = 200;
+            var totalAllowedMilliseconds = expectedMillisecondsTimeout + MilliseoncdsTimeoutTolerance;
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(expectedMillisecondsTimeout));
+
+            var watch = new Stopwatch();
+            watch.Start();
+            //GetSubElements 0,5s
+            await elementLookupService.CaptionUiElementsAsync(elementProviderMock.GetElementsOfActiveWindow(), ct: cancellationTokenSource.Token);
+            watch.Stop();
+
+
+            Assert.IsTrue(watch.ElapsedMilliseconds < expectedMillisecondsTimeout + MilliseoncdsTimeoutTolerance, $"Method execution took {watch.ElapsedMilliseconds}ms but only {totalAllowedMilliseconds}ms than allowed");
+
         }
     }
 }
