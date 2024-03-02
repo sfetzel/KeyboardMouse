@@ -64,7 +64,7 @@ namespace KeyboardMouseWin.Service
                 await Task.Run(async () =>
                 {
                     var subelements = uIElementProvider.GetSubElements(element);
-                    //if (cancellationToken.IsCancellationRequested) return;
+                    if (cancellationToken.IsCancellationRequested) return;
                     await UpdateElementsAsync(uIElements, subelements, cancellationToken, elementsAddedAction);
                 }, cancellationToken);
             }
