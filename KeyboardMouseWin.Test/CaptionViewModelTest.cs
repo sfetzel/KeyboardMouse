@@ -1,13 +1,7 @@
 ﻿using KeyboardMouseWin.Provider;
 using KeyboardMouseWin.Service;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KeyboardMouseWin.Test
 {
@@ -30,7 +24,6 @@ namespace KeyboardMouseWin.Test
                 {
                     yield return new MockUiElement();
                 }
-                yield break;
             }
 
             private int waitingTimeMs = 10;
@@ -43,7 +36,6 @@ namespace KeyboardMouseWin.Test
                     yield return new MockUiElement();
                 }
                 waitingTimeMs = 5000;
-                yield break;
             }
         }
 
