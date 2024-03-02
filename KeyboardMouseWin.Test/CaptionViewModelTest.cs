@@ -87,7 +87,7 @@ namespace KeyboardMouseWin.Test
             watch.Stop();
 
 
-            Assert.IsTrue(watch.ElapsedMilliseconds < expectedMillisecondsTimeout + MilliseoncdsTimeoutTolerance, $"Method execution took {watch.ElapsedMilliseconds}ms but only {totalAllowedMilliseconds}ms than allowed");
+            Assert.IsTrue(watch.ElapsedMilliseconds < totalAllowedMilliseconds, $"Method execution took {watch.ElapsedMilliseconds}ms but only {totalAllowedMilliseconds}ms than allowed");
 
         }
     }
