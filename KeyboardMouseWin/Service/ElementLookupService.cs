@@ -21,14 +21,11 @@ namespace KeyboardMouseWin.Service
         {
             this.uIElementProvider = uIElementProvider;
         }
-        CancellationToken cancellationToken = new CancellationToken();
-        private int maxdepth = 10;
         public async Task CaptionUiElementsAsync(IEnumerable<IUIElement> startingElements, Action<IEnumerable<IUIElement>>? elementsAddedAction = null, CancellationToken ct = default)
         {
             try
             {
-                cancellationToken = ct;
-                var updateTask = UpdateElements(new ConcurrentBag<IUIElement>(), startingElements, elementsAddedAction);
+                var updateTask = UpdateElementsAsync(new ConcurrentBag<IUIElement>(), startingElements, ct, elementsAddedAction);
                 var timeoutTask = Task.Delay(Timeout.Infinite, ct);
 
                 var completedTask = await Task.WhenAny(updateTask, timeoutTask);
@@ -50,7 +47,7 @@ namespace KeyboardMouseWin.Service
             }
 
         }
-        private async Task UpdateElements(ConcurrentBag<IUIElement> uIElements, IEnumerable<IUIElement> newElements, Action<IEnumerable<IUIElement>>? elementsAddedAction = null)
+        private async Task UpdateElementsAsync(ConcurrentBag<IUIElement> uIElements, IEnumerable<IUIElement> newElements, CancellationToken cancellationToken, Action<IEnumerable<IUIElement>>? elementsAddedAction = null)
         {
             if (cancellationToken.IsCancellationRequested) return;
             for (int i = 0; i < newElements.Count(); i++)
@@ -61,7 +58,6 @@ namespace KeyboardMouseWin.Service
 
             if (cancellationToken.IsCancellationRequested) return;
             elementsAddedAction?.Invoke(uIElements);
-
             for (int i = 0; i < newElements.Count(); i++)
             {
                 var element = newElements.ElementAt(i);
@@ -69,7 +65,7 @@ namespace KeyboardMouseWin.Service
                 {
                     var subelements = uIElementProvider.GetSubElements(element);
                     //if (cancellationToken.IsCancellationRequested) return;
-                    await UpdateElements(uIElements, subelements, elementsAddedAction);
+                    await UpdateElementsAsync(uIElements, subelements, cancellationToken, elementsAddedAction);
                 }, cancellationToken);
             }
         }
