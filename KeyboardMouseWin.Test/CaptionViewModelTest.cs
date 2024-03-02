@@ -71,16 +71,18 @@ namespace KeyboardMouseWin.Test
             var MilliseoncdsTimeoutTolerance = 200;
             var totalAllowedMilliseconds = expectedMillisecondsTimeout + MilliseoncdsTimeoutTolerance;
             var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(expectedMillisecondsTimeout));
+            var trackedItems = new List<IUIElement>();
 
+            // Act
             var watch = new Stopwatch();
             watch.Start();
-            //GetSubElements 0,5s
-            await elementLookupService.CaptionUiElementsAsync(elementProviderMock.GetElementsOfActiveWindow(), ct: cancellationTokenSource.Token);
+            await elementLookupService.CaptionUiElementsAsync(elementProviderMock.GetElementsOfActiveWindow(), (a) => trackedItems.AddRange(a), ct: cancellationTokenSource.Token); ;
             watch.Stop();
 
-
+            // Assert
             Assert.IsTrue(watch.ElapsedMilliseconds < totalAllowedMilliseconds, $"Method execution took {watch.ElapsedMilliseconds}ms but only {totalAllowedMilliseconds}ms than allowed");
-
+            Assert.IsTrue(trackedItems.Count > 0);
+            
         }
     }
 }
