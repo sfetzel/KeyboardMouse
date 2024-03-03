@@ -18,20 +18,9 @@ namespace KeyboardMouseWin.Service
                 var updateTask = UpdateElementsAsync(new ConcurrentBag<IUIElement>(), startingElements, ct, elementsAddedAction);
                 var timeoutTask = Task.Delay(Timeout.Infinite, ct);
 
-                var completedTask = await Task.WhenAny(updateTask, timeoutTask);
-
-                if (completedTask == updateTask)
-                {
-                    // The updateTask completed first
-                    // Add your logic here
-                }
-                else if (completedTask == timeoutTask)
-                {
-                    // The timeoutTask completed first
-                    // Add your logic here
-                }
+                _ = await Task.WhenAny(updateTask, timeoutTask);
             }
-            catch (TaskCanceledException ex)
+            catch (TaskCanceledException)
             {
                 // catch Cancellation token exception from Task.Run() and return
             }

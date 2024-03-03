@@ -130,11 +130,18 @@ namespace KeyboardMouseWin
         public Settings Settings { get; set; } = Settings.Default;
         public Dispatcher Dispatcher { get; private set; }
 
-        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher)
+        private readonly IElementLookupService elementLookupService;
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher, IElementLookupService elementLookupService)
         {
             CaptionService = captionService;
             Dispatcher = dispatcher;
+            this.elementLookupService = elementLookupService;
             this.ElementProvider = elementProvider;
+        }
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher) : this(captionService, elementProvider, dispatcher,
+            new ElementLookupService(elementProvider))
+        {
+
         }
 
         public HashSet<Key> DownKeys { get; set; } = new();
@@ -357,23 +364,12 @@ namespace KeyboardMouseWin
             }
             Mouse.Position = currentPosition;
         }
-        public IElementLookupService ElementLookupServiceFactory()
-        {
-            //var legacyElementLookupService = new LegacyElementLookupService(ElementProvider,
-            //    () => new LimitedTimeExecutor(CaptionTimeLimit));
-            //return legacyElementLookupService;
 
-            var lookupService = new ElementLookupService(ElementProvider);
-            return lookupService;
-        }
         public async Task CaptionUiElements(IEnumerable<IUIElement>? uIElements = null)
         {
-            var elementLookup = ElementLookupServiceFactory();
             characterIndex = 0;
-
             var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
-            await elementLookup.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), UpdateCaptionedElements, cancellationTokenSource.Token);
-            //Debug.WriteLine($"get elements took {executor.Stopwatch.ElapsedMilliseconds}, found {CaptionService.CurrentObjects.Count}");
+            await elementLookupService.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), UpdateCaptionedElements, cancellationTokenSource.Token);
         }
 
         private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)
