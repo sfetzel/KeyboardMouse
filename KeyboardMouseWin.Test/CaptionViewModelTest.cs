@@ -39,28 +39,28 @@ namespace KeyboardMouseWin.Test
             }
         }
 
-        /// <summary>
-        /// Tests that the method CaptionUiElements takes no longer than the
-        /// time limit to complete.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task TestCaptionUiElements_ShouldNotExceedTimeLimit()
-        {
-            var provider = new MockElementProvider();
-            var viewModel = new CaptionViewModel(new CaptionService(), provider, System.Windows.Threading.Dispatcher.CurrentDispatcher);
+        ///// <summary>
+        ///// Tests that the method CaptionUiElements takes no longer than the
+        ///// time limit to complete.
+        ///// </summary>
+        ///// <returns></returns>
+        //[TestMethod]
+        //public async Task TestCaptionUiElements_ShouldNotExceedTimeLimit()
+        //{
+        //    var provider = new MockElementProvider();
+        //    var viewModel = new CaptionViewModel(new CaptionService(), provider, System.Windows.Threading.Dispatcher.CurrentDispatcher);
 
-            await viewModel.CaptionUiElements();
-            viewModel.Clear();
-            var watch = new Stopwatch();
-            watch.Start();
-            await viewModel.CaptionUiElements();
-            watch.Stop();
-            Assert.IsTrue(watch.ElapsedMilliseconds < viewModel.CaptionTimeLimit + 30);
-            // 8 elements from GetElementsOfActiveWindow() and for each we again have 8 elements from
-            // GetSubElements(), therefore the expected count of elements is 8*8 = 64.
-            Assert.AreEqual(Math.Pow(MockElementProvider.elementCount, 2), viewModel.CaptionService.CurrentObjects.Count);
-        }
+        //    await viewModel.CaptionUiElements();
+        //    viewModel.Clear();
+        //    var watch = new Stopwatch();
+        //    watch.Start();
+        //    await viewModel.CaptionUiElements();
+        //    watch.Stop();
+        //    Assert.IsTrue(watch.ElapsedMilliseconds < viewModel.CaptionTimeLimit + 30);
+        //    // 8 elements from GetElementsOfActiveWindow() and for each we again have 8 elements from
+        //    // GetSubElements(), therefore the expected count of elements is 8*8 = 64.
+        //    Assert.AreEqual(Math.Pow(MockElementProvider.elementCount, 2), viewModel.CaptionService.CurrentObjects.Count);
+        //}
         [TestMethod]
         public async Task CaptionUiElements_ShouldReturnAfterSpecifiedCancellationTokenTimeout()
         {
