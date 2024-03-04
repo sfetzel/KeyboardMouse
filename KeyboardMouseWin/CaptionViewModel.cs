@@ -23,7 +23,7 @@ namespace KeyboardMouseWin
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int CaptionTimeLimit { get; } = 200;
+        public int CaptionTimeLimit { get; } = 250;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>

@@ -16,7 +16,7 @@ namespace KeyboardMouseWin.Service
             var elements = new ConcurrentBag<IUIElement>();
             try
             {
-                var updateTask = UpdateElementsAsync(elements, startingElements, ct, elementsAddedAction);
+                var updateTask = Task.Run(() => UpdateElementsAsync(elements, startingElements, ct, elementsAddedAction), ct);
                 var timeoutTask = Task.Delay(Timeout.Infinite, ct);
 
                 _ = await Task.WhenAny(updateTask, timeoutTask);
@@ -36,8 +36,10 @@ namespace KeyboardMouseWin.Service
                 uIElements.Add(element);
             }
 
-            if (cancellationToken.IsCancellationRequested) return;
             elementsAddedAction?.Invoke(uIElements);
+            // Cancel after new elements have been added (otherwise elements belonging to one
+            // layer may be missing).
+            if (cancellationToken.IsCancellationRequested) return;
             for (int i = 0; i < newElements.Count(); i++)
             {
                 var element = newElements.ElementAt(i);
