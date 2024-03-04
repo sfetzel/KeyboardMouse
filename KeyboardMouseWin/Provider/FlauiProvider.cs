@@ -15,42 +15,41 @@ namespace KeyboardMouseWin
 {
     public class FlauiProvider : IUIElementProvider
     {
+        private UIA3Automation automation = new();
+
+        private nint? foregroundWindowHandle;
+
+        public FlauiProvider(nint? foregroundWindowHandle = null)
+        {
+            this.foregroundWindowHandle = foregroundWindowHandle;
+        }
+
+
         public IEnumerable<IUIElement> GetElementsOfActiveWindow()
         {
-            using (var automation = new UIA3Automation())
-            {
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                var window = automation.FromHandle(WindowsUtils.GetForegroundWindow());
-                var descendants = window.FindAllChildren().AsParallel().Select(
-                    element => new FlauiUiElement(element));
-                stopwatch.Stop();
-                //Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
-                foreach(var element in descendants)
-                {
-                    yield return element;
-                }
-            }
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var window = automation.FromHandle(foregroundWindowHandle ?? WindowsUtils.GetForegroundWindow());
+            var children = window.FindAllChildren();
+            var descendants = children.Select(element => new FlauiUiElement(element));
+            stopwatch.Stop();
+            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find {children.Length} descendants");
+            return descendants;
         }
 
         public IEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
         {
             if (rootElement is FlauiUiElement flauiElement)
             {
-                using (var automation = new UIA3Automation())
-                {
-                    var stopwatch = new Stopwatch();
-                    stopwatch.Start();
-                    var descendants = flauiElement.Element.FindAllChildren().AsParallel().Select(
-                        element => new FlauiUiElement(element));
-                    stopwatch.Stop();
-                    //Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find all descendants");
-                    foreach (var element in descendants)
-                    {
-                        yield return element;
-                    }
-                }
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                var children = flauiElement.Element.FindAllChildren();
+                var descendants = children.Select(element => new FlauiUiElement(element));
+                stopwatch.Stop();
+                Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find {children.Length} descendants");
+                return descendants;
             }
+            return [];
         }
     }
 }

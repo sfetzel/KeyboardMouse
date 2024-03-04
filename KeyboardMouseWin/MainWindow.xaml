@@ -85,7 +85,7 @@
                                             <DoubleAnimation
                                                 Storyboard.TargetName="CaptionText" 
                                                 Storyboard.TargetProperty="(TextBlock.Opacity)"
-                                                From="0.0" To="1.0" Duration="0:0:0.2" 
+                                                From="0.2" To="1.0" Duration="0:0:0.2" 
                                                 AutoReverse="False" />
                                         </Storyboard>
                                     </BeginStoryboard>

@@ -23,7 +23,7 @@ namespace KeyboardMouseWin
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int CaptionTimeLimit { get; } = 100;
+        public int CaptionTimeLimit { get; } = 200;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>
@@ -368,8 +368,15 @@ namespace KeyboardMouseWin
         public async Task CaptionUiElements(IEnumerable<IUIElement>? uIElements = null)
         {
             characterIndex = 0;
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1000));
-            await elementLookupService.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), UpdateCaptionedElements, cancellationTokenSource.Token);
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(CaptionTimeLimit));
+            var stopwatch = Stopwatch.StartNew();
+            var elements = await elementLookupService.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), 
+                UpdateCaptionedElements, cancellationTokenSource.Token);
+            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to execute element lookup service");
+            // execute update once more because call to this function may be outside of time frame.
+            UpdateCaptionedElements(elements);
+            stopwatch.Stop();
+            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms in total to caption ui elements");
         }
 
         private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)
