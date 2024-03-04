@@ -12,7 +12,7 @@ using System.Xml.Linq;
 
 namespace KeyboardMouseWin.Service
 {
-    internal class LegacyElementLookupService : IElementLookupService
+    public class LegacyElementLookupService : IElementLookupService
     {
         private readonly IUIElementProvider uIElementProvider;
         private readonly Func<LimitedTimeExecutor> limitedTimeExecutorBuilder;
@@ -22,16 +22,12 @@ namespace KeyboardMouseWin.Service
             this.uIElementProvider = uIElementProvider;
             this.limitedTimeExecutorBuilder = limitedTimeExecutorBuilder;
         }
-        public async Task CaptionUiElementsAsync(IEnumerable<IUIElement> startingElements, Action<IEnumerable<IUIElement>>? elementsAddedAction = null, CancellationToken ct = default)
+        public async Task<IEnumerable<IUIElement>> CaptionUiElementsAsync(IEnumerable<IUIElement> startingElements, Action<IEnumerable<IUIElement>>? elementsAddedAction = null, CancellationToken ct = default)
         {
             var elements = new ConcurrentBag<IUIElement>();
             var executor = limitedTimeExecutorBuilder();
             async void UpdateElements(IEnumerable<IUIElement> newElements)
             {
-                if (executor.IsOverLimit)
-                {
-                    return;
-                }
                 foreach (var element in newElements)
                 {
                     elements.Add(element);
@@ -46,9 +42,9 @@ namespace KeyboardMouseWin.Service
                     }
                 }
             }
-            await executor.Run(() => UpdateElements(startingElements), false);
+            await executor.Run(() => UpdateElements(startingElements), true);
 
-
+            return elements;
         }
     }
 }
