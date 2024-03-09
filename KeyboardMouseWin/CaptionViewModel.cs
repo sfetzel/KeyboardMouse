@@ -2,13 +2,10 @@
 using KeyboardMouseWin.Service;
 using KeyboardMouseWin.Utils;
 using SharpHook;
-using System.CodeDom.Compiler;
-using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Mouse = FlaUI.Core.Input.Mouse;
@@ -23,7 +20,7 @@ namespace KeyboardMouseWin
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int CaptionTimeLimit { get; } = 250;
+        public int CaptionTimeLimit { get; } = 200;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>
@@ -342,25 +339,24 @@ namespace KeyboardMouseWin
                     // the click actually works.
                     IsActive = false;
                     Debug.WriteLine($"Click on {uiElementPair.Key}, isDoubleClick: {isDoubleClick}");
-                    onHiddenAction = () => ClickOnPoint(isDoubleClick, clickPoint.Value);
+                    onHiddenAction = async () => await ClickOnPoint(isDoubleClick, clickPoint.Value);
                 }
             }
         }
 
-        private void ClickOnPoint(bool isDoubleClick, Point clickPoint)
+        private async Task ClickOnPoint(bool isDoubleClick, Point clickPoint)
         {
             var currentPosition = Mouse.Position;
-            (var scalingX, var scalingY) = GetDpiScaling();
-            Debug.WriteLine($"Using scaling: x: {scalingX}, y:{scalingY}");
-            var x = (short)(clickPoint.X / scalingX);
-            var y = (short)(clickPoint.Y / scalingY);
+            var x = (short)(clickPoint.X);
+            var y = (short)(clickPoint.Y);
             var clickCount = isDoubleClick ? 2 : 1;
             Debug.WriteLine($"Click on x: {x}, y: {y}");
             for (int i = 0; i < clickCount; ++i)
             {
                 simulator.SimulateMousePress(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
+                await Task.Delay(5);
                 simulator.SimulateMouseRelease(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
-                Thread.Sleep(5);
+                await Task.Delay(5);
             }
             Mouse.Position = currentPosition;
         }
@@ -408,21 +404,6 @@ namespace KeyboardMouseWin
                 Debug.WriteLine($"Error when converting to captioned element: {ex.Message}");
             }
             return captionedElement;
-        }
-
-        private (double scalingX, double scalingY) GetDpiScaling()
-        {
-            double scalingX = 1;
-            double scalingY = 1;
-
-            PresentationSource presentationsource = null; //PresentationSource.FromVisual(this);
-
-            if (presentationsource != null) // make sure it's connected
-            {
-                scalingX = presentationsource.CompositionTarget.TransformToDevice.M11;
-                scalingY = presentationsource.CompositionTarget.TransformToDevice.M22;
-            }
-            return (scalingX, scalingY);
         }
     }
 }
