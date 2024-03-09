@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Automation;
+﻿using KeyboardMouseWin.Utils;
 
 namespace KeyboardMouseWin
 {
@@ -16,7 +11,7 @@ namespace KeyboardMouseWin
 
         public void SetObjects(IEnumerable<IUIElement> elements, string prefix = "")
         {
-            CurrentObjects = CaptionHelper.CreateCaptions(elements);
+            CurrentObjects = CaptionHelper.CreateCaptions(elements, prefix, CurrentObjects);
         }
 
         public IEnumerable<KeyValuePair<string, IUIElement>> GetFilteredOut(char c, int index)

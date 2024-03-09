@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KeyboardMouseWin.TestApp\KeyboardMouseWin.TestApp.csproj" />
     <ProjectReference Include="..\KeyboardMouseWin\KeyboardMouseWin.csproj" />
   </ItemGroup>
 

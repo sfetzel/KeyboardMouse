@@ -50,7 +50,6 @@ namespace KeyboardMouseWin.Utils
                 await firstTask;
             }
             IsOverLimit = true;
-            Stopwatch.Stop();
         }
         /// <summary>
         /// Starts a new task if the time limit has not been exceeded yet. Adds the

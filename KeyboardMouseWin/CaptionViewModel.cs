@@ -1,12 +1,11 @@
 ﻿using KeyboardMouseWin.Provider;
+using KeyboardMouseWin.Service;
 using KeyboardMouseWin.Utils;
 using SharpHook;
-using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Mouse = FlaUI.Core.Input.Mouse;
@@ -21,7 +20,7 @@ namespace KeyboardMouseWin
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int CaptionTimeLimit { get; } = 100;
+        public int CaptionTimeLimit { get; } = 200;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>
@@ -128,11 +127,18 @@ namespace KeyboardMouseWin
         public Settings Settings { get; set; } = Settings.Default;
         public Dispatcher Dispatcher { get; private set; }
 
-        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher)
+        private readonly IElementLookupService elementLookupService;
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher, IElementLookupService elementLookupService)
         {
             CaptionService = captionService;
             Dispatcher = dispatcher;
+            this.elementLookupService = elementLookupService;
             this.ElementProvider = elementProvider;
+        }
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher) : this(captionService, elementProvider, dispatcher,
+            new ElementLookupService(elementProvider))
+        {
+
         }
 
         public HashSet<Key> DownKeys { get; set; } = new();
@@ -147,7 +153,7 @@ namespace KeyboardMouseWin
         public async Task HandleKeyDown(Key key, HookEventArgs eventArgs)
         {
             Debug.WriteLine($"key pressed: {key}");
-            if(key == Key.LeftAlt)
+            if (key == Key.LeftAlt)
             {
                 IsCaptionVisible = false;
             }
@@ -333,64 +339,40 @@ namespace KeyboardMouseWin
                     // the click actually works.
                     IsActive = false;
                     Debug.WriteLine($"Click on {uiElementPair.Key}, isDoubleClick: {isDoubleClick}");
-                    onHiddenAction = () => ClickOnPoint(isDoubleClick, clickPoint.Value);
+                    onHiddenAction = async () => await ClickOnPoint(isDoubleClick, clickPoint.Value);
                 }
             }
         }
 
-        private void ClickOnPoint(bool isDoubleClick, Point clickPoint)
+        private async Task ClickOnPoint(bool isDoubleClick, Point clickPoint)
         {
             var currentPosition = Mouse.Position;
-            (var scalingX, var scalingY) = GetDpiScaling();
-            Debug.WriteLine($"Using scaling: x: {scalingX}, y:{scalingY}");
-            var x = (short)(clickPoint.X / scalingX);
-            var y = (short)(clickPoint.Y / scalingY);
+            var x = (short)(clickPoint.X);
+            var y = (short)(clickPoint.Y);
             var clickCount = isDoubleClick ? 2 : 1;
             Debug.WriteLine($"Click on x: {x}, y: {y}");
             for (int i = 0; i < clickCount; ++i)
             {
                 simulator.SimulateMousePress(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
+                await Task.Delay(5);
                 simulator.SimulateMouseRelease(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
-                Thread.Sleep(5);
+                await Task.Delay(5);
             }
             Mouse.Position = currentPosition;
         }
 
-        public async Task CaptionUiElements() => await CaptionUiElements(ElementProvider.GetElementsOfActiveWindow());
-
-        /// <summary>
-        /// Gets all subelements until the "CaptionTimeLimit" is exceeded.
-        /// </summary>
-        /// <param name="startingElements"></param>
-        /// <returns></returns>
-        public async Task CaptionUiElements(IEnumerable<IUIElement> startingElements)
+        public async Task CaptionUiElements(IEnumerable<IUIElement>? uIElements = null)
         {
-            var elements = new ConcurrentBag<IUIElement>();
-            var executor = new LimitedTimeExecutor(CaptionTimeLimit);
-            async void UpdateElements(IEnumerable<IUIElement> newElements)
-            {
-                if (executor.IsOverLimit)
-                {
-                    return;
-                }
-                foreach (var element in newElements)
-                {
-                    elements.Add(element);
-                }
-                UpdateCaptionedElements(elements);
-                Debug.WriteLine($"Adding objects at {executor.Stopwatch.ElapsedMilliseconds}");
-                if (!executor.IsOverLimit)
-                {
-                    foreach (var element in newElements)
-                    {
-                        executor.StartNewTask(() => UpdateElements(ElementProvider.GetSubElements(element)));
-                    }
-                }
-            }
-            await executor.Run(() => UpdateElements(startingElements), false);
-            Debug.WriteLine($"get elements took {executor.Stopwatch.ElapsedMilliseconds}, found {CaptionService.CurrentObjects.Count}");
             characterIndex = 0;
-
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(CaptionTimeLimit));
+            var stopwatch = Stopwatch.StartNew();
+            var elements = await elementLookupService.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), 
+                UpdateCaptionedElements, cancellationTokenSource.Token);
+            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to execute element lookup service");
+            // execute update once more because call to this function may be outside of time frame.
+            UpdateCaptionedElements(elements);
+            stopwatch.Stop();
+            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms in total to caption ui elements");
         }
 
         private void UpdateCaptionedElements(IEnumerable<IUIElement> elements)
@@ -422,21 +404,6 @@ namespace KeyboardMouseWin
                 Debug.WriteLine($"Error when converting to captioned element: {ex.Message}");
             }
             return captionedElement;
-        }
-
-        private (double scalingX, double scalingY) GetDpiScaling()
-        {
-            double scalingX = 1;
-            double scalingY = 1;
-
-            PresentationSource presentationsource = null; //PresentationSource.FromVisual(this);
-
-            if (presentationsource != null) // make sure it's connected
-            {
-                scalingX = presentationsource.CompositionTarget.TransformToDevice.M11;
-                scalingY = presentationsource.CompositionTarget.TransformToDevice.M22;
-            }
-            return (scalingX, scalingY);
         }
     }
 }

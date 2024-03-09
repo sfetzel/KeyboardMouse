@@ -4,11 +4,13 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Mouse = FlaUI.Core.Input.Mouse;
 
 namespace KeyboardMouseWin
@@ -28,20 +30,23 @@ namespace KeyboardMouseWin
         /// Brings the window to front. Needs to hide base implementation because
         /// return type must be void for XAML behaviors.
         /// </summary>
-        public new void Activate() => base.Activate();
-
-        private (double scalingX, double scalingY) GetDpiScaling()
+        public new void Activate()
         {
-            double scalingX = 1;
-            double scalingY = 1;
-            PresentationSource presentationsource = PresentationSource.FromVisual(this);
-
-            if (presentationsource != null) // make sure it's connected
+            try
             {
-                scalingX = presentationsource.CompositionTarget.TransformToDevice.M11;
-                scalingY = presentationsource.CompositionTarget.TransformToDevice.M22;
+                // Workaround to avoid problems in debug mode.
+                var dispatcherType = typeof(Dispatcher);
+                var countField = dispatcherType.GetField("_disableProcessingCount", BindingFlags.Instance | BindingFlags.NonPublic);
+                var count = (int)countField.GetValue(Dispatcher.CurrentDispatcher);
+                var suspended = count > 0;
+                if (!suspended)
+                {
+                    base.Activate();
+                }
             }
-            return (scalingX, scalingY);
+            catch (InvalidOperationException)
+            {
+            }
         }
     }
 }

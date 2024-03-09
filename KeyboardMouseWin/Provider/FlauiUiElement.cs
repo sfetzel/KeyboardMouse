@@ -12,7 +12,7 @@ namespace KeyboardMouseWin
     {
         public AutomationElement Element {get; private set;}
 
-        public Rectangle BoundingRectangle => Element.BoundingRectangle;
+        public Rectangle BoundingRectangle { get; private set; }
 
         public System.Windows.Point? ClickPoint
         {
@@ -30,6 +30,7 @@ namespace KeyboardMouseWin
         public FlauiUiElement(AutomationElement element)
         {
             Element = element;
+            BoundingRectangle = Element.BoundingRectangle;
         }
     }
 }
