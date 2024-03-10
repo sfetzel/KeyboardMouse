@@ -11,5 +11,8 @@
     <Setting Name="ClearKeyCombiantion" Type="System.String" Scope="User">
       <Value Profile="(Default)">Escape</Value>
     </Setting>
+    <Setting Name="ReclickLastPointKeyCombination" Type="System.String" Scope="User">
+      <Value Profile="(Default)">LeftAlt,LeftShift,A</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
