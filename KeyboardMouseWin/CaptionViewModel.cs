@@ -116,7 +116,6 @@ namespace KeyboardMouseWin
             }
         }
 
-
         private int characterIndex { get; set; } = 0;
         private readonly EventSimulator simulator = new();
         private Rectangle WindowRectangle = new();
@@ -146,7 +145,7 @@ namespace KeyboardMouseWin
         private bool isShiftDown => DownKeys.Contains(Key.LeftShift);
 
         private bool isControlDown => DownKeys.Contains(Key.LeftCtrl);
-
+        private Point? lastClickedPoint;
 
         private Action? onHiddenAction = null;
         private KeyConverter keyConverter = new KeyConverter();
@@ -166,6 +165,8 @@ namespace KeyboardMouseWin
             }
 
             DownKeys.Add(key);
+
+            await HandleReclick();
 
             if (KeyCombination.FromString(Settings.ClearKeyCombiantion).IsPressed(DownKeys))
             {
@@ -202,6 +203,15 @@ namespace KeyboardMouseWin
                 eventArgs.SuppressEvent = true;
                 Clear();
                 ClickFirstElement(isControlDown);
+            }
+        }
+
+        private async Task HandleReclick()
+        {
+            if (KeyCombination.FromString(Settings.ReclickLastPointKeyCombination).IsPressed(DownKeys) && lastClickedPoint.HasValue)
+            {
+                Debug.WriteLine("Reclick activated");
+                await ClickOnPoint(isControlDown, lastClickedPoint.Value);
             }
         }
 
@@ -351,12 +361,15 @@ namespace KeyboardMouseWin
             var y = (short)(clickPoint.Y);
             var clickCount = isDoubleClick ? 2 : 1;
             Debug.WriteLine($"Click on x: {x}, y: {y}");
+
+            lastClickedPoint = clickPoint;
+
             for (int i = 0; i < clickCount; ++i)
             {
                 simulator.SimulateMousePress(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
-                await Task.Delay(5);
+                await Task.Delay(10);
                 simulator.SimulateMouseRelease(x, y, SharpHook.Native.MouseButton.Button1, (ushort)clickCount);
-                await Task.Delay(5);
+                await Task.Delay(10);
             }
             Mouse.Position = currentPosition;
         }

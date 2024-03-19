@@ -58,5 +58,17 @@ namespace KeyboardMouseWin {
                 this["ClearKeyCombiantion"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("LeftAlt,LeftShift,A")]
+        public string ReclickLastPointKeyCombination {
+            get {
+                return ((string)(this["ReclickLastPointKeyCombination"]));
+            }
+            set {
+                this["ReclickLastPointKeyCombination"] = value;
+            }
+        }
     }
 }

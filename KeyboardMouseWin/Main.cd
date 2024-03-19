@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="KeyboardMouseWin.MainWindow" Collapsed="true">
-    <Position X="6" Y="6.25" Width="1.5" />
+    <Position X="5.5" Y="6.25" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAABAAAAAAAEAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>MainWindow.xaml.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -11,10 +11,11 @@
   <Class Name="KeyboardMouseWin.CaptionViewModel" Collapsed="true">
     <Position X="8.25" Y="6.25" Width="2" />
     <TypeIdentifier>
-      <HashCode>BAAAIgABhAEAAJQAVAABQVHAgACAgEEAgMAkBABhIAQ=</HashCode>
+      <HashCode>BAAEIgRBhAUAAIQAVAABQVDAgACAgEEAgMAkBABhIIQ=</HashCode>
       <FileName>CaptionViewModel.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
+      <Field Name="elementLookupService" />
       <Property Name="CaptionService" />
       <Property Name="Settings" />
     </ShowAsAssociation>
@@ -60,7 +61,7 @@
   <Class Name="KeyboardMouseWin.FlauiProvider" Collapsed="true">
     <Position X="15.5" Y="7.25" Width="3" />
     <TypeIdentifier>
-      <HashCode>AAAAAAABAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAAAAAABAAAAAAAAAAgAAAAAAAAAAAAABAgAAAAAAAA=</HashCode>
       <FileName>Provider\FlauiProvider.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -72,11 +73,18 @@
       <FileName>IUIElement.cs</FileName>
     </TypeIdentifier>
   </Interface>
-  <Interface Name="KeyboardMouseWin.IUIElementProvider" Collapsed="true">
-    <Position X="12.75" Y="7.25" Width="2.25" />
+  <Interface Name="KeyboardMouseWin.Provider.IUIElementProvider" Collapsed="true">
+    <Position X="15.5" Y="6.25" Width="3.25" />
     <TypeIdentifier>
       <HashCode>AAAAAAABAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>IUIElementProvider.cs</FileName>
+      <FileName>Provider\IUIElementProvider.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="KeyboardMouseWin.Service.IElementLookupService" Collapsed="true">
+    <Position X="11.25" Y="7.25" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>Service\IElementLookupService.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Font Name="Segoe UI" Size="9" />
