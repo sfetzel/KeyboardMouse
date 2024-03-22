@@ -32,6 +32,7 @@ jobs:
       Configuration: Release
       TargetPlatform: ${{ matrix.targetplatform }}
       TFM: net8.0-windows10.0.19041.0 #TargetFramework
+      RuntimeIdentifier: win-${{ matrix.targetplatform }} 
 
     steps:
     - name: Checkout
@@ -96,9 +97,6 @@ jobs:
     #     name: published-app
     #     path: ./published/
 
-    # Restore the application
-    - name: DotNet Restore for wapproj
-      run: dotnet restore ${{ env.WappProjectPath }} --runtime ${{ env.TFM }}
 
     # Build the Windows Application Packaging project
     - name: Build the Windows Application Packaging Project (wapproj) 
