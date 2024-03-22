@@ -13,8 +13,10 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]
-        targetplatform: [x86, x64]
+        # configuration: [Debug, Release]
+        # targetplatform: [x86, x64]
+        configuration: [Release]
+        targetplatform: [x64]
 
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
@@ -80,15 +82,15 @@ jobs:
     #     path: ./published/
 
     # Restore the application
-    # - name:  Restore the Wpf application to populate the obj folder
-    #   run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=$env:RuntimeIdentifier /p:Platform=$env:TargetPlatform
-    #   env:
-    #     Configuration: Debug
-    #     RuntimeIdentifier: win-${{ matrix.targetplatform }}
+    - name:  Restore the Wpf application to populate the obj folder
+      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration /p:TargetFramework=net8.0-windows /p:Runtimeidentifier=win-$env:TargetPlatform
+      env:
+        Configuration: Debug
+        RuntimeIdentifier: win-${{ matrix.targetplatform }}
 
     # Build the Windows Application Packaging project
     - name: Build the Windows Application Packaging Project (wapproj) 
-      run: msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj  /p:TargetFramework=net8.0-windows /p:Runtimeidentifier=win-x86 /restore
+      run: msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj  /p:TargetFramework=net8.0-windows /p:Runtimeidentifier=win-$env:TargetPlatform
       #run: msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj /p:Platform=$env:TargetPlatform /p:Configuration=$env:Configuration 
       # /p:UapAppxPackageBuildMode=$env:BuildMode /p:AppxBundle=$env:AppxBundle /p:PackageCertificateKeyFile=$env:SigningCertificate /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
       env:
