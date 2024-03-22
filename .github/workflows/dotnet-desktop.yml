@@ -42,6 +42,10 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    # Add  MsBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.0
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
