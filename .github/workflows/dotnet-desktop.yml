@@ -50,7 +50,7 @@ jobs:
 
     # Build the application
     - name: Build the application
-      run: dotnet build ${{ env.Solution_Name }} --configuration ${{ matrix.configuration }}
+      run: dotnet build ${{ env.Wpf_Project_Path }} --configuration ${{ matrix.configuration }}
     
       # Execute all unit tests in the solution
     - name: Execute unit tests
