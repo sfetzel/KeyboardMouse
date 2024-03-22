@@ -45,6 +45,9 @@ jobs:
     # Add  MsBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
+      with:
+        vs-prerelease: false
+        #msbuild-architecture: x64
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
