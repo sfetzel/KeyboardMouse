@@ -44,7 +44,7 @@ jobs:
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
-      run: dotnet restore ${{ env.Solution_Name }}
+      run: dotnet restore ${{ env.Wpf_Project_Path }}
       env:
         Configuration: ${{ matrix.configuration }}
 
