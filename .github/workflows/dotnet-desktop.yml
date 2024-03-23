@@ -77,15 +77,17 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Download certificate & install
+      uses: azure/cli@v2
       if: env.Wap_build == 'true'
-      run: |           
+      with:
+        azcliversion: 2.30.0
+        inlineScript: |       
           $keyvaultname = "getkeyvault"
           $keyvaultSecretField = "AppPublisherCertificateName"
           # get certificate from azure
           $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
           echo $secret
           dir
-      shell: pwsh
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
