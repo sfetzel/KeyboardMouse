@@ -71,6 +71,11 @@ jobs:
         $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
         $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
 
+    - uses: azure/login@v1
+      if: env.Wap_build == 'true'
+      with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       if: env.Wpf_build == 'true'
