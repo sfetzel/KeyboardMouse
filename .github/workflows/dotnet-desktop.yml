@@ -59,14 +59,14 @@ jobs:
           $keyvaultname="getkeyvault"
           $keyvaultSecretField="AppPublisherCertificateName"
           $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
-      
+
           # Get the certificate name from the Azure Key Vault
           $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
-      
+
           # Convert the SecureString to a regular string
           $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($certificateName.SecretValue)
           $certificateNameString = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-      
+
           # Define the file path where the certificate will be saved
           $certFilePath="${{ github.workspace }}\appCert.pfx"
 
@@ -81,10 +81,9 @@ jobs:
           # Convert the secret string to a byte array
           $secretByte = [Convert]::FromBase64String($PlainTextString)
 
-          # Import the byte array into an X509Certificate2 object
-          $x509Cert = new-object System.Security.Cryptography.X509Certificates.X509Certificate2
-          $x509Cert.Import($secretByte, "", "Exportable,PersistKeySet") 
-      
+          # Create an X509Certificate2 object from the byte array
+          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $secretByte, $pass, 'Exportable,PersistKeySet'
+
           # Get the password for the certificate
           $publisherCertificatePassword = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
 
