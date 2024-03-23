@@ -67,35 +67,35 @@ jobs:
         $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
         $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
 
-    # # Restore the application to populate the obj folder with RuntimeIdentifiers
-    # - name: Restore the application
-    #   run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
-    #   env:
-    #     Configuration: ${{ matrix.configuration }}
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Restore the application
+      run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
+      env:
+        Configuration: ${{ matrix.configuration }}
 
-    # # Build the application
-    # - name: Build the application
-    #   run: dotnet build ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
+    # Build the application
+    - name: Build the application
+      run: dotnet build ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
 
-    # - name: Build the test application
-    #   run: dotnet build ${{ env.Test_Project_Path }}/${{ env.Test_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
+    - name: Build the test application
+      run: dotnet build ${{ env.Test_Project_Path }}/${{ env.Test_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
     
-    #   # Execute all unit tests in the solution
-    # - name: Execute unit tests
-    #   run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }}
+      # Execute all unit tests in the solution
+    - name: Execute unit tests
+      run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }}
 
-    # # Publish the Wap package
-    # - name: Publish the Wpf package
-    #   if: github.event_name != 'pull_request'
-    #   run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-x64 -o ./published
+    # Publish the Wap package
+    - name: Publish the Wpf package
+      if: github.event_name != 'pull_request'
+      run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-x64 -o ./published
 
-    # # Upload the published app as an artifact
-    # - name: Upload artifact
-    #   if: github.event_name != 'pull_request'
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: published-app
-    #     path: ./published/
+    # Upload the published app as an artifact
+    - name: Upload artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v2
+      with:
+        name: published-app
+        path: ./published/
 
     - name: Get rid of all for wapproj 
       run: dotnet clean ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
