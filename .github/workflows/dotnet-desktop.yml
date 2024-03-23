@@ -98,7 +98,7 @@ jobs:
     #     path: ./published/
 
     - name: Build the Windows Application Packaging Project (wapproj) 
-      run: msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj /t:Clean
+      run: msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj /t:Restore /t:Clean
     
 
     # Build the Windows Application Packaging project
