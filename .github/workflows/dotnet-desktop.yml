@@ -98,7 +98,7 @@ jobs:
     #     path: ./published/
 
     - name: Get rid of all for wapproj 
-      run: msbuild $env:Solution_Name /t:Clean
+      run: dotnet clean $env:Solution_Name /t:Clean
     
 
     # Build the Windows Application Packaging project
