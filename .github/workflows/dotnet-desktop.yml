@@ -55,7 +55,7 @@ jobs:
       uses: azure/powershell@v1
       with:
         inlineScript: |
-          $keyvaultname="getkeyvault"
+          $keyvaultname="${{ secrets.keyvaultname }}"
           $keyvaultSecretField="AppPublisherCertificateName"
           # get certificate from azure
           $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
