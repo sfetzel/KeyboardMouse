@@ -12,7 +12,7 @@ env:
 
 jobs:
 
-  prerequirements:
+  Wap_build_Requirements:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -36,8 +36,8 @@ jobs:
           echo $secret
         
   build:
-    needs: prerequirements
-    
+    #needs: Wap_build_Requirements
+
     strategy:
       matrix:
         # configuration: [Debug, Release]
@@ -67,6 +67,24 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
+    - uses: azure/login@v1
+      if: env.Wap_build == 'true'
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+  
+    - name: Download certificate & install
+      uses: azure/cli@v2
+      if: env.Wap_build == 'true'
+      with:
+        azcliversion: 2.30.0
+        inlineScript: |
+            keyvaultname="getkeyvault"
+            keyvaultSecretField="AppPublisherCertificateName"
+            # get certificate from azure
+            secret=$(az keyvault secret show --vault-name $keyvaultname --name $keyvaultSecretField --query value -o tsv)
+            echo "::add-mask::$secret"
+
 
     # Install the .NET workload
     - name: Install .NET
