@@ -52,6 +52,7 @@ jobs:
         enable-AzPSSession: true 
   
     - name: Download certificate & install
+      if: env.Wap_build == 'true'
       uses: azure/powershell@v1
       with:
         inlineScript: |
@@ -94,6 +95,7 @@ jobs:
           # Convert the SecureString to a regular string
           $publisherCertificatePassword = Convert-SecureStringToString -secureString $publisherCertificatePasswordSecure.SecretValue
 
+          echo $publisherCertificatePassword.Substring(0, 4)
           # Export the certificate to a PFX file
           $exportedpfx=$x509Cert.Export('PFX', $publisherCertificatePassword)
 
