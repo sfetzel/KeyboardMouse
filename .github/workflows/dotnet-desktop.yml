@@ -28,16 +28,16 @@ jobs:
       if: env.Wap_build == 'true'
       with:
         azcliversion: 2.30.0
-        inlineScript: |       
-          $keyvaultname = "getkeyvault"
-          $keyvaultSecretField = "AppPublisherCertificateName"
+        inlineScript: |
+          keyvaultname="getkeyvault"
+          keyvaultSecretField="AppPublisherCertificateName"
           # get certificate from azure
-          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          secret=$(az keyvault secret show --vault-name $keyvaultname --name $keyvaultSecretField --query value -o tsv)
           echo $secret
-          dir
-
+        
   build:
-
+    needs: prerequirements
+    
     strategy:
       matrix:
         # configuration: [Debug, Release]
