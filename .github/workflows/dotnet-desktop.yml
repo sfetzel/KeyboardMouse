@@ -76,6 +76,17 @@ jobs:
       with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Download certificate & install
+      if: env.Wap_build == 'true'
+      run: |           
+          $keyvaultname = "getkeyvault"
+          $keyvaultSecretField = "AppPublisherCertificateName"
+          # get certificate from azure
+          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          echo $secret
+          dir
+      shell: pwsh
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       if: env.Wpf_build == 'true'
