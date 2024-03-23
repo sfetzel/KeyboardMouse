@@ -55,6 +55,16 @@ jobs:
       uses: azure/powershell@v1
       with:
         inlineScript: |
+          # Function to convert a SecureString to a regular string
+          function Convert-SecureStringToString {
+            param (
+              [System.Security.SecureString]$secureString
+            )
+            $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureString)
+            $string = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+            return $string
+          }
+
           # Define the name of the key vault and the secret field
           $keyvaultname="getkeyvault"
           $keyvaultSecretField="AppPublisherCertificateName"
@@ -64,31 +74,31 @@ jobs:
           $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
 
           # Convert the SecureString to a regular string
-          $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($certificateName.SecretValue)
-          $certificateNameString = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-
-          # Define the file path where the certificate will be saved
-          $certFilePath="${{ github.workspace }}\appCert.pfx"
+          $certificateNameString = Convert-SecureStringToString -secureString $certificateName.SecretValue
 
           # Get the secret (the certificate) from the Azure Key Vault
           $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
 
           # Convert the secret value from a SecureString to a regular string
-          $pass = $secret.SecretValue | ConvertFrom-SecureString
-          $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret.SecretValue)
-          $PlainTextString = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+          $PlainTextString = Convert-SecureStringToString -secureString $secret.SecretValue
 
           # Convert the secret string to a byte array
           $secretByte = [Convert]::FromBase64String($PlainTextString)
 
           # Create an X509Certificate2 object from the byte array
-          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $secretByte, $pass, 'Exportable,PersistKeySet'
+          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $secretByte, $PlainTextString, 'Exportable,PersistKeySet'
 
           # Get the password for the certificate
-          $publisherCertificatePassword = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+          $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+
+          # Convert the SecureString to a regular string
+          $publisherCertificatePassword = Convert-SecureStringToString -secureString $publisherCertificatePasswordSecure.SecretValue
 
           # Export the certificate to a PFX file
-          $exportedpfx=$x509Cert.Export('PFX',"$publisherCertificatePassword.SecretValue")
+          $exportedpfx=$x509Cert.Export('PFX', $publisherCertificatePassword)
+
+          # Define the file path where the certificate will be saved
+          $certFilePath="${{ github.workspace }}\appCert.pfx"
 
           # Save the PFX file to the specified path
           Set-Content -Path $certFilePath -Value $exportedpfx -Encoding Byte
