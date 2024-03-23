@@ -51,15 +51,42 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         enable-AzPSSession: true 
   
-    - name: Run Azure PowerShell inline script
+    - name: Download certificate & install
       uses: azure/powershell@v1
       with:
         inlineScript: |
-          $keyvaultname="${{ secrets.keyvaultname }}"
+          # Define the name of the key vault and the secret field
+          $keyvaultname="getkeyvault"
           $keyvaultSecretField="AppPublisherCertificateName"
-          # get certificate from azure
-          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
-          echo $secret
+          $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
+          # Get the certificate name from the Azure Key Vault
+          $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          echo $certificateName.SecretValue 
+          # Define the file path where the certificate will be saved
+          $certFilePath="${{ github.workspace }}\appCert.pfx"
+        
+          # Get the secret (the certificate) from the Azure Key Vault
+          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateName.SecretValue
+        
+          # Convert the secret value from a SecureString to a regular string
+          $pass = $secret.SecretValue | ConvertFrom-SecureString
+          $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret.SecretValue)
+          $PlainTextString = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+        
+          # Convert the secret string to a byte array
+          $secretByte = [Convert]::FromBase64String($PlainTextString)
+        
+          # Import the byte array into an X509Certificate2 object
+          $x509Cert = new-object System.Security.Cryptography.X509Certificates.X509Certificate2
+          $x509Cert.Import($secretByte, "", "Exportable,PersistKeySet") 
+          # Get the password for the certificate
+          $publisherCertificatePassword = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+        
+          # Export the certificate to a PFX file
+          $exportedpfx=$x509Cert.Export('PFX',"$publisherCertificatePassword.SecretValue")
+        
+          # Save the PFX file to the specified path
+          Set-Content -Path $certFilePath -Value $exportedpfx -Encoding Byte
         azPSVersion: "latest"
 
 
