@@ -78,6 +78,7 @@ jobs:
       uses: azure/powershell@v1
       with:
         inlineScript: |
+          Connect-AzAccount
           $keyvaultname="getkeyvault"
           $keyvaultSecretField="AppPublisherCertificateName"
           # get certificate from azure
