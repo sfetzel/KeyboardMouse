@@ -24,7 +24,7 @@ jobs:
     env:
       Solution_Name: KeyboardMouse.sln                         # Replace with your solution name, i.e. MyWpfApp.sln.
       Test_Project_Path: KeyboardMouseWin.Test                 # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
-      Wpf_build: true
+      Wpf_build: false
       Wpf_Project_Path: KeyboardMouseWin                 # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
       Wap_build: true
       Wap_Project_Directory: your-wap-project-directory-name    # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
