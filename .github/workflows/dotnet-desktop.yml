@@ -74,7 +74,7 @@ jobs:
     
           # Get the certificate name from the Azure Key Vault
           $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
-    
+          echo $certificateName.SecretValue
           # Convert the SecureString to a regular string
           $certificateNameString = Convert-SecureStringToString -secureString $certificateName.SecretValue
     
