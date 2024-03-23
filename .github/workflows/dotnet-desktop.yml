@@ -11,7 +11,8 @@ env:
   Wap_build: true
 
 jobs:
-
+  # since the azure/cli@v2 ends on windows with Error: Please use Linux-based OS as a runner.
+  # we need to split the build into two jobs
   Wap_build_Requirements:
     runs-on: ubuntu-latest
     steps:
@@ -73,17 +74,16 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
   
-    - name: Download certificate & install
-      uses: azure/cli@v2
-      if: env.Wap_build == 'true'
+    - name: Run Azure PowerShell inline script
+      uses: azure/powershell@v1
       with:
-        azcliversion: 2.30.0
         inlineScript: |
-            keyvaultname="getkeyvault"
-            keyvaultSecretField="AppPublisherCertificateName"
-            # get certificate from azure
-            secret=$(az keyvault secret show --vault-name $keyvaultname --name $keyvaultSecretField --query value -o tsv)
-            echo "::add-mask::$secret"
+          $keyvaultname="getkeyvault"
+          $keyvaultSecretField="AppPublisherCertificateName"
+          # get certificate from azure
+          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          echo $secret
+        azPSVersion: "latest"
 
 
     # Install the .NET workload
