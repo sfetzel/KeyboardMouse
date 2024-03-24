@@ -183,7 +183,7 @@ jobs:
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
           /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
           /p:AppxPackageSigningEnabled=true
-          /p:AppxBundle=$env:AppxBundle `
+          /p:AppxBundle="${{ env.AppxBundle}}" `
           /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
           /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
           /p:PackageCertificatePassword="$publisherCertificatePassword"
