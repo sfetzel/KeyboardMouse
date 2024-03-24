@@ -13,8 +13,6 @@ env:
 jobs:
       
   build:
-    #needs: Wap_build_Requirements
-
     strategy:
       matrix:
         # configuration: [Debug, Release]
@@ -35,7 +33,6 @@ jobs:
       Wap_Project_Path: KeyboardMouseWin.Wap                # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
       AppxBundle: Never
       BuildMode: SideLoadOnly
-      Configuration: Release
       TargetPlatform: ${{ matrix.targetplatform }}
       RuntimeIdentifier: win-${{ matrix.targetplatform }}
 
@@ -157,7 +154,14 @@ jobs:
     - name: Get rid of all for wapproj
       if: env.Wap_build == 'true'
       run: dotnet clean ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
-    
+
+    - name: Build the Windows Application Packaging Project (wapproj) with powershell
+      if: env.Wap_build == 'true'
+      uses: azure/powershell@v1
+      with:
+        inlineScript: |
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj /t:Restore /p:Platform=${{ matrix.configuration }}  /p:TargetFramework=net8.0-windows /p:Runtimeidentifier=win-$env:TargetPlatform
+        azPSVersion: "latest"
 
     # Build the Windows Application Packaging project
     - name: Build the Windows Application Packaging Project (wapproj)
@@ -168,7 +172,7 @@ jobs:
       env:
         AppxBundle: Never
         BuildMode: SideLoadOnly
-        Configuration: Release
+        Configuration: ${{ matrix.configuration }}
         TargetPlatform: ${{ matrix.targetplatform }}
 
 
