@@ -176,7 +176,7 @@ jobs:
           mkdir ${{env.AppxPackageDir}}
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /t:"Restore;Build" `
+          /t:Restore `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
           /p:Configuration=${{ matrix.configuration }} `
@@ -185,15 +185,33 @@ jobs:
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFramework=net8.0-windows 
+          /p:TargetFramework=net8.0-windows `
+          /p:RuntimeIdentifiers=win-x86;win-x64
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
+          
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /t:Build `
+          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
+          /p:Runtimeidentifier=win-$env:TargetPlatform `
+          /p:Configuration=${{ matrix.configuration }} `
+          /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
+          /p:AppxPackageDir="$env:AppxPackageDir" `
+          /p:GenerateAppxPackageOnBuild=true `
+          /p:TargetFramework=net8.0-windows `
+          /p:RuntimeIdentifiers=win-x86;win-x64
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "MSBuild Build failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
           
           dir ${{env.AppxPackageDir}}
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "MSBuild failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-          }
-
           
           dir mkdir ${{env.AppxPackageDir}}
           dir $env:Wap_Project_Path\
