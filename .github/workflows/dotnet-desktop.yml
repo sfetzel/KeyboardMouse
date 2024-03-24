@@ -185,8 +185,7 @@ jobs:
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFramework=net8.0-windows `
-          /p:RuntimeIdentifiers="win-x86;win-x64"
+          /p:TargetFramework=net8.0-windows 
           
           dir ${{env.AppxPackageDir}}
 
