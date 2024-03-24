@@ -56,51 +56,39 @@ jobs:
       uses: azure/powershell@v1
       with:
         inlineScript: |
-   
           # Define the name of the key vault and the secret field
           $keyvaultname="getkeyvault"
           $keyvaultSecretField="AppPublisherCertificateName"
           $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
     
-          # Get the certificate name from the Azure Key Vault
+          # Get the certificate name from the Azure Key Vault and Convert the SecureString to a regular string
           $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
-
-          # Convert the SecureString to a regular string
           $certificateNameString = $certificateName.SecretValue | ConvertFrom-SecureString -AsPlainText
-          echo $certificateNameString 
+
           # Get the secret (the certificate) from the Azure Key Vault
           $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
           $PlainTextString = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText 
 
-          # Get the certificate from the Azure Key Vault
-          $certificate = Get-AzKeyVaultCertificate -VaultName $keyvaultname -Name $certificateNameString
-
           # Get the password for the certificate
           $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
-    
-          # Convert the SecureString to a regular string
           $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
-          echo $publisherCertificatePassword.Substring(0, 4)
-    
+
           $PFXBase64 = $PlainTextString
-          echo $PFXBase64.Substring(0, 4)
           $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
           $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
           $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
-
-          $PFXPassword = $publisherCertificatePassword
-          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $PFXPassword)
+          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $publisherCertificatePassword)
 
           # Define the file path where the certificate will be saved
           $certFilePath="${{ github.workspace }}\appCert.pfx"
-
           [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
 
-          dir
-          $x509Cert
-         
+          # Set the certFilePath as an environment variable
+          echo "CERT_FILE_PATH=$certFilePath" | Out-File -FilePath $env:GITHUB_ENV -Append
         azPSVersion: "latest"
 
+    - name: Use certFilePath
+      run: echo "The certificate file path is ${{ env.CERT_FILE_PATH }}"
 
     # Install the .NET workload
     - name: Install .NET
