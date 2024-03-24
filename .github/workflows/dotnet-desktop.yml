@@ -186,7 +186,7 @@ jobs:
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
           /p:TargetFramework=net8.0-windows `
-          /p:RuntimeIdentifiers="win-x86;win-x64"
+          /p:RuntimeIdentifiers='win-x86;win-x64'
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
