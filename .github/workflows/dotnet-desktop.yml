@@ -84,8 +84,17 @@ jobs:
           # Define the file path where the certificate will be saved
           $certFilePath="${{ github.workspace }}\appCert.pfx"
     
+          $PFXBase64 = $PlainTextString
+          $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
+          $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
+          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
 
+          $PFXPassword = $publisherCertificatePassword
+          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $PFXPassword)
+          [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
 
+          dir
+          $x509Cert
          
         azPSVersion: "latest"
 
