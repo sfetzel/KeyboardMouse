@@ -24,6 +24,14 @@ namespace KeyboardMouseWin
         {
             InitializeComponent();
             Hide();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            WelcomeWindow welcomeWindow = new WelcomeWindow();
+            welcomeWindow.DataContext = new WelcomeWindowViewModel();
+            welcomeWindow.Show();
         }
 
         /// <summary>
