@@ -184,7 +184,7 @@ jobs:
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:"Restore;Build" `
-          /p:AppxBundlePlatforms="$env:Appx_Bundle_Platforms" `
+          /p:AppxBundlePlatforms="${{matrix.targetplatform}}" `
           /p:Configuration=${{ matrix.configuration }} `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
           /p:AppxBundle=$env:AppxBundle `
