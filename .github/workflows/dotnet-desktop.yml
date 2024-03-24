@@ -181,20 +181,9 @@ jobs:
 
           mkdir ${{env.AppxPackageDir}}
 
+
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /t:Restore `
-          /p:Configuration=${{ matrix.configuration }} `
-          /p:TargetFramework=net8.0-windows `
-          /p:RuntimeIdentifiers=win-x86
-          
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
-              exit $LASTEXITCODE
-          }
-          echo "MSBuild Restore succeeded"
-          
-          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /t:Build `
+          /t:Restore;Build `
           /p:AppxBundlePlatforms="$env:Appx_Bundle_Platforms" `
           /p:Configuration=${{ matrix.configuration }} `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
@@ -225,4 +214,4 @@ jobs:
       # if: github.event_name != 'pull_request' && env.Wap_build == 'true'
       with:
         name: MSIX Package
-        path: $env:AppxPackageDir
+        path: ${{ env.AppxPackageDir }}
