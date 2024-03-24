@@ -202,7 +202,6 @@ jobs:
           }
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /p:ParentConfiguration=$env:Configuration `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Configuration=$env:Configuration `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
