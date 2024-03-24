@@ -175,32 +175,6 @@ jobs:
 
           mkdir ${{env.AppxPackageDir}}
 
-          # msbuild $env:Solution_Name `
-          # /t:Restore `
-          # /p:Configuration=${{ matrix.configuration }} `
-          # /p:Platform=${{ matrix.targetplatform }}  `
-          # /p:TargetFramework=net8.0-windows `
-          # /p:Runtimeidentifier=win-$env:TargetPlatform `
-
-          # echo "MSBuild Restore exit code: $LASTEXITCODE"
-          # if ($LASTEXITCODE -ne 0) {
-          #     Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
-          #     exit $LASTEXITCODE
-          # }
-
-          # msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          # /t:Restore `
-          # /p:Configuration=${{ matrix.configuration }} `
-          # /p:Platform=${{ matrix.targetplatform }}  `
-          # /p:TargetFramework=net8.0-windows `
-          # /p:Runtimeidentifier=win-$env:TargetPlatform `
-
-          # echo "MSBuild Restore exit code: $LASTEXITCODE"
-          # if ($LASTEXITCODE -ne 0) {
-          #   Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
-          #   exit $LASTEXITCODE
-          # }
-
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
@@ -216,6 +190,10 @@ jobs:
             Write-Error "MSBuild failed with exit code $LASTEXITCODE"
             exit $LASTEXITCODE
           }
+          dir $env:Wap_Project_Path\
+          dir $env:Wap_Project_Path\bin\
+          dir $env:Wap_Project_Path\bin\$env:Configuration\$env:TargetPlatform\
+          dir mkdir ${{env.AppxPackageDir}}
 
         azPSVersion: "latest"
 
