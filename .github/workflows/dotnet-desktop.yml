@@ -185,8 +185,7 @@ jobs:
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFrameworks=net8.0-windows `
-          /p:RuntimeIdentifiers=win-x86;win-x64
+          /p:TargetFrameworks=net8.0-windows
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "MSBuild failed with exit code $LASTEXITCODE"
@@ -194,21 +193,6 @@ jobs:
           }
 
           dir ${{env.AppxPackageDir}}
-
-          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
-          /p:Runtimeidentifier=win-$env:TargetPlatform `
-          /p:Configuration=${{ matrix.configuration }} `
-          /p:UapAppxPackageBuildMode=$env:BuildMode `
-          /p:AppxBundle=$env:AppxBundle `
-          /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
-          /p:AppxPackageDir="$env:AppxPackageDir" `
-          /p:GenerateAppxPackageOnBuild=true
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "MSBuild failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-          }
           
           dir mkdir ${{env.AppxPackageDir}}
           dir $env:Wap_Project_Path\
