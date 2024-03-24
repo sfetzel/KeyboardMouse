@@ -177,15 +177,21 @@ jobs:
 
           msbuild $env:Solution_Name `
           /t:Restore `
-          /p:Platform=${{ matrix.configuration }}  `
+          /p:Configuration=$env:Configuration `
+          /p:Platform=${{ matrix.targetplatform }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
 
           echo "MSBuild Restore exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
-          /p:Platform=${{ matrix.configuration }}  `
+          /p:Configuration=$env:Configuration `
+          /p:Platform=${{ matrix.targetplatform }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
 
