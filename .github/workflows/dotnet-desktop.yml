@@ -188,13 +188,13 @@ jobs:
           /p:TargetFramework=net8.0-windows `
           /p:RuntimeIdentifiers="win-x86;win-x64"
           
+          dir ${{env.AppxPackageDir}}
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "MSBuild failed with exit code $LASTEXITCODE"
             exit $LASTEXITCODE
           }
 
-          dir ${{env.AppxPackageDir}}
           
           dir mkdir ${{env.AppxPackageDir}}
           dir $env:Wap_Project_Path\
