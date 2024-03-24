@@ -177,16 +177,7 @@ jobs:
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
-          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
-          /p:Runtimeidentifier=win-$env:TargetPlatform `
-          /p:Configuration=${{ matrix.configuration }} `
-          /p:UapAppxPackageBuildMode=$env:BuildMode `
-          /p:AppxBundle=$env:AppxBundle `
-          /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
-          /p:AppxPackageDir="$env:AppxPackageDir" `
-          /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFramework=net8.0-windows `
-          /p:RuntimeIdentifiers='win-x86;win-x64'
+          /p:Configuration=${{ matrix.configuration }} 
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
