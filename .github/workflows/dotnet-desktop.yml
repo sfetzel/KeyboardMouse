@@ -70,6 +70,7 @@ jobs:
           echo $certificateNameString 
           # Get the secret (the certificate) from the Azure Key Vault
           $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
+          $PlainTextString = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText 
 
           # Get the certificate from the Azure Key Vault
           $certificate = Get-AzKeyVaultCertificate -VaultName $keyvaultname -Name $certificateNameString
