@@ -31,10 +31,11 @@ jobs:
       Wap_build: true
       Wap_Project_Directory: your-wap-project-directory-name    # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
       Wap_Project_Path: KeyboardMouseWin.Wap                # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
-      AppxBundle: Never
-      BuildMode: SideLoadOnly
+      AppxBundle: Always # Possible Values: Always, Never
+      BuildMode: StoreUpload  # Possible Values: StoreUpload  SideLoadOnly
       TargetPlatform: ${{ matrix.targetplatform }}
       RuntimeIdentifier: win-${{ matrix.targetplatform }}
+      AppxPackageDir: AppPackages
 
     steps:
     - name: Checkout
@@ -162,18 +163,28 @@ jobs:
         inlineScript: |
           $keyvaultname="${{ secrets.KEYVAULTNAME }}"
           $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"
+          $keyvaultPublisherCertificateThumbprintField="AppPublisherCertificateThumbprint"
+
           # Get the password for the certificate
           $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
           $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
+             
+          # Get the thumbprint for the certificate
+          $resizesigningCertthumbprint = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificateThumbprintField
+          $resizesigningCertthumbprint = $resizesigningCertthumbprint.SecretValue | ConvertFrom-SecureString -AsPlainText
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
           /p:Platform=${{ matrix.configuration }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
+          /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:Configuration=$env:Configuration `
+          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxPackageSigningEnabled=true
           /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
           /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
           /p:PackageCertificatePassword="$publisherCertificatePassword"
         azPSVersion: "latest"
@@ -199,4 +210,4 @@ jobs:
       if: github.event_name != 'pull_request' && env.Wap_build == 'true'
       with:
         name: MSIX Package
-        path: MyWpfApp.Package\AppPackages\
+        path: $env:AppxPackageDir
