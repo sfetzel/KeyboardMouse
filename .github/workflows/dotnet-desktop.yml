@@ -199,7 +199,7 @@ jobs:
     # Upload the MSIX package: https://github.com/marketplace/actions/upload-artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
-      # if: github.event_name != 'pull_request' && env.Wap_build == 'true'
+      if: github.event_name != 'pull_request' && env.Wap_build == 'true'
       with:
         name: MSIX Package
         path: ${{ env.AppxPackageDir }}
