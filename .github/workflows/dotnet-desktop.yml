@@ -157,7 +157,7 @@ jobs:
         azPSVersion: "latest"
 
     - name: Build the Windows Application Packaging Project (wapproj) with powershell
-      if: env.Wap_build == 'true' and ${{ matrix.targetplatform != 'x64' }}    # Only build the wapproj for x86
+      if: env.Wap_build == 'true' && matrix.targetplatform != 'x64'
       uses: azure/powershell@v1
       with:
         inlineScript: |
