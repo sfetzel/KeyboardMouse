@@ -57,25 +57,6 @@ jobs:
         vs-prerelease: false
         #msbuild-architecture: x64
 
-    - name: Generate version number with date and workflow Run Number
-      if: env.Wap_build == 'true'
-      id: version-creator
-      run: |
-        $buildDay = Get-Date -Format "yyyy.Mdd"
-        $runNumber = "$env:GITHUB_RUN_NUMBER"
-        $ver = $buildDay + "." + $runNumber + ".0"
-        echo "::set-output name=APP_VERSION::$ver"
-
-    - name: Update manifest version
-      if: env.Wap_build == 'true'
-      run: |
-        [xml]$manifest = get-content "$env:Wap_Project_Path\Package.appxmanifest"
-        $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
-        $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
-
-        # Display the content of the Package.appxmanifest file
-        Get-Content "$env:Wap_Project_Path\Package.appxmanifest"
-
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       if: env.Wpf_build == 'true' 
@@ -119,7 +100,26 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         enable-AzPSSession: true 
-  
+
+    - name: Generate version number with date and workflow Run Number
+      if: env.Wap_build == 'true'
+      id: version-creator
+      run: |
+        $buildDay = Get-Date -Format "yyyy.Mdd"
+        $runNumber = "$env:GITHUB_RUN_NUMBER"
+        $ver = $buildDay + "." + $runNumber + ".0"
+        echo "::set-output name=APP_VERSION::$ver"
+
+    - name: Update manifest version
+      if: env.Wap_build == 'true'
+      run: |
+        [xml]$manifest = get-content "$env:Wap_Project_Path\Package.appxmanifest"
+        $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
+        $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
+
+        # Display the content of the Package.appxmanifest file
+        # Get-Content "$env:Wap_Project_Path\Package.appxmanifest"
+
     - name: Download certificate & install
       if: env.Wap_build == 'true'
       uses: azure/powershell@v1
