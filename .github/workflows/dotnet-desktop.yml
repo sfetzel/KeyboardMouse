@@ -178,7 +178,7 @@ jobs:
           /p:Platform=${{ matrix.configuration }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
-          /p:AppxPackageDir="$env:AppxPackageDir" `
+          /p:AppxPackageDir="${{env.AppxPackageDir}}" `
           /p:Configuration=$env:Configuration `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
           /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
@@ -186,7 +186,10 @@ jobs:
           /p:AppxBundle="${{ env.AppxBundle}}" `
           /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
           /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
-          /p:PackageCertificatePassword="$publisherCertificatePassword"
+          /p:PackageCertificatePassword="$publisherCertificatePassword"`
+
+          dir ${{env.AppxPackageDir}}
+
         azPSVersion: "latest"
 
     # Upload the MSIX package: https://github.com/marketplace/actions/upload-artifact
