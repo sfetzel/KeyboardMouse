@@ -54,7 +54,7 @@ jobs:
       with:
         inlineScript: |
           # Define the name of the key vault and the secret field
-          $keyvaultname="getkeyvault"
+          $keyvaultname=${{ secrets.KEYVAULTNAME }}
           $keyvaultSecretField="AppPublisherCertificateName"
           $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
     
@@ -160,6 +160,7 @@ jobs:
       uses: azure/powershell@v1
       with:
         inlineScript: |
+          $keyvaultname=${{ secrets.KEYVAULTNAME }}
           $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"
           # Get the password for the certificate
           $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
