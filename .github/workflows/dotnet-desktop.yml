@@ -193,9 +193,7 @@ jobs:
           /p:AppxBundle=$env:AppxBundle `
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
-          /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFramework=net8.0-windows `
-          /p:RuntimeIdentifiers="win-x86;win-x64"
+          /p:GenerateAppxPackageOnBuild=true 
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSBuild Build failed with exit code $LASTEXITCODE"
