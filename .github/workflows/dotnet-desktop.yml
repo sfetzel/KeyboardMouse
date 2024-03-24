@@ -192,7 +192,7 @@ jobs:
           # /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
           # /p:PackageCertificatePassword="$publisherCertificatePassword"`
 
-          msbuild $env:Solution_Name `
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Configuration=$env:Configuration `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
@@ -201,6 +201,11 @@ jobs:
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true
           dir ${{env.AppxPackageDir}}
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MSBuild failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
 
         azPSVersion: "latest"
 
