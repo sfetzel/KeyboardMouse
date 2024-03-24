@@ -7,13 +7,18 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+  Wap_build: true
+
 jobs:
-
+      
   build:
-
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        # configuration: [Debug, Release]
+        # targetplatform: [x86, x64]
+        configuration: [Release]
+        targetplatform: [x86,x64]
 
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
@@ -21,8 +26,16 @@ jobs:
     env:
       Solution_Name: KeyboardMouse.sln                         # Replace with your solution name, i.e. MyWpfApp.sln.
       Test_Project_Path: KeyboardMouseWin.Test                 # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
+      Wpf_build: false
+      Wpf_Project_Path: KeyboardMouseWin                 # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
+      Wap_build: true
       Wap_Project_Directory: your-wap-project-directory-name    # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
-      Wap_Project_Path: KeyboardMouseWin.csproj                 # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
+      Wap_Project_Path: KeyboardMouseWin.Wap                # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
+      AppxBundle: Never # Possible Values: Always, Never
+      BuildMode: SideloadOnly  # Possible Values: StoreUpload  SideLoadOnly
+      TargetPlatform: ${{ matrix.targetplatform }}
+      RuntimeIdentifier: win-${{ matrix.targetplatform }}
+      AppxPackageDir: ${{ github.workspace }}\AppPackages\
 
     steps:
     - name: Checkout
@@ -36,29 +49,157 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    # Add  MsBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Add msbuild to PATH
+      if: env.Wap_build == 'true'
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-prerelease: false
+        #msbuild-architecture: x64
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
-      run: dotnet restore ${{ env.Solution_Name }}
+      if: env.Wpf_build == 'true' 
+      run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
       env:
         Configuration: ${{ matrix.configuration }}
 
     # Build the application
     - name: Build the application
-      run: dotnet build ${{ env.Solution_Name }} --configuration ${{ matrix.configuration }}
+      if: env.Wpf_build == 'true'
+      run: dotnet build ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
+
+    - name: Build the test application
+      if: env.Wpf_build == 'true'
+      run: dotnet build ${{ env.Test_Project_Path }}/${{ env.Test_Project_Path }}.csproj --configuration ${{ matrix.configuration }}
     
       # Execute all unit tests in the solution
     - name: Execute unit tests
+      if: env.Wpf_build == 'true'
       run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }}
 
     # Publish the Wap package
-    - name: Publish the Wap package
-      if: github.event_name != 'pull_request'
-      run: dotnet publish ${{ env.Wap_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-x64 -o ./published
+    - name: Publish the Wpf package
+      if: github.event_name != 'pull_request' && env.Wpf_build == 'true'
+      run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-x64 -o ./published
 
     # Upload the published app as an artifact
     - name: Upload artifact
-      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.Wpf_build == 'true'
       uses: actions/upload-artifact@v2
       with:
         name: published-app
         path: ./published/
+
+    - name: Get rid of all for wapproj
+      if: env.Wap_build == 'true'
+      run: dotnet clean ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
+
+    - uses: azure/login@v1
+      if: env.Wap_build == 'true'
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        enable-AzPSSession: true 
+
+    - name: Generate version number with date and workflow Run Number
+      if: env.Wap_build == 'true'
+      id: version-creator
+      run: |
+        $buildDay = Get-Date -Format "yyyy.Mdd"
+        $runNumber = "$env:GITHUB_RUN_NUMBER"
+        $ver = $buildDay + "." + $runNumber + ".0"
+        echo "::set-output name=APP_VERSION::$ver"
+
+    - name: Update manifest version
+      if: env.Wap_build == 'true'
+      run: |
+        [xml]$manifest = get-content "$env:Wap_Project_Path\Package.appxmanifest"
+        $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
+        $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
+
+        # Display the content of the Package.appxmanifest file
+        # Get-Content "$env:Wap_Project_Path\Package.appxmanifest"
+
+    - name: Download certificate & install
+      if: env.Wap_build == 'true'
+      uses: azure/powershell@v1
+      with:
+        inlineScript: |
+          # Define the name of the key vault and the secret field
+          $keyvaultname="${{ secrets.KEYVAULTNAME }}"
+          $keyvaultSecretField="AppPublisherCertificateName"
+          $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
+    
+          # Get the certificate name from the Azure Key Vault and Convert the SecureString to a regular string
+          $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          $certificateNameString = $certificateName.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          # Get the secret (the certificate) from the Azure Key Vault
+          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
+          $PlainTextString = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText 
+
+          # Get the password for the certificate
+          $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+          $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          $PFXBase64 = $PlainTextString
+          $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
+          $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
+          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
+          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $publisherCertificatePassword)
+
+          # Define the file path where the certificate will be saved
+          $certFilePath="${{ github.workspace }}\appCert.pfx"
+          [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
+
+          # Set the certFilePath as an environment variable
+          echo "CERT_FILE_PATH=$certFilePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        azPSVersion: "latest"
+
+    - name: Build the Windows Application Packaging Project (wapproj) with powershell
+      if: env.Wap_build == 'true' && matrix.targetplatform != 'x64'
+      uses: azure/powershell@v1
+      with:
+        inlineScript: |
+          $keyvaultname="${{ secrets.KEYVAULTNAME }}"
+          $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"
+          $keyvaultPublisherCertificateThumbprintField="AppPublisherCertificateThumbprint"
+
+          # Get the password for the certificate
+          $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+          $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
+             
+          # Get the thumbprint for the certificate
+          $resizesigningCertthumbprint = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificateThumbprintField
+          $resizesigningCertthumbprint = $resizesigningCertthumbprint.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          mkdir ${{env.AppxPackageDir}}
+
+
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /t:"Restore;Build" `
+          /p:AppxBundlePlatforms="${{matrix.targetplatform}}" `
+          /p:Configuration=${{ matrix.configuration }} `
+          /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
+          /p:AppxPackageDir="$env:AppxPackageDir" `
+          /p:GenerateAppxPackageOnBuild=true `
+          /p:TargetFramework=net8.0-windows `
+          /p:AppInstallerUri="${{env.AppxPackageDir}}" `
+          /p:RuntimeIdentifiers=win-${{matrix.targetplatform}}
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "MSBuild Build failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
+
+        azPSVersion: "latest"
+
+    # Upload the MSIX package: https://github.com/marketplace/actions/upload-artifact
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2
+      if: github.event_name != 'pull_request' && env.Wap_build == 'true'
+      with:
+        name: MSIX Package
+        path: ${{ env.AppxPackageDir }}
