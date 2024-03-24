@@ -165,7 +165,16 @@ jobs:
           $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
           $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
 
-          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj /t:Restore /p:Platform=${{ matrix.configuration }}  /p:TargetFramework=net8.0-windows /p:Runtimeidentifier=win-$env:TargetPlatform /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:BuildMode /p:AppxBundle=$env:AppxBundle /p:PackageCertificateKeyFile=${{ env.CERT_FILE_PATH }}" /p:PackageCertificatePassword=$publisherCertificatePassword
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /t:Restore `
+          /p:Platform=${{ matrix.configuration }}  `
+          /p:TargetFramework=net8.0-windows `
+          /p:Runtimeidentifier=win-$env:TargetPlatform `
+          /p:Configuration=$env:Configuration `
+          /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
+          /p:PackageCertificatePassword="$publisherCertificatePassword"
         azPSVersion: "latest"
 
     # Build the Windows Application Packaging project
