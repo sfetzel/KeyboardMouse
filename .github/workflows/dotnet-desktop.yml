@@ -202,6 +202,7 @@ jobs:
           # }
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /t:Restore `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
           /p:Configuration=${{ matrix.configuration }} `
