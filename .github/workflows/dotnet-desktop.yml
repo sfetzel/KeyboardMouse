@@ -80,17 +80,19 @@ jobs:
           # Convert the SecureString to a regular string
           $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
           echo $publisherCertificatePassword.Substring(0, 4)
-
-          # Define the file path where the certificate will be saved
-          $certFilePath="${{ github.workspace }}\appCert.pfx"
     
           $PFXBase64 = $PlainTextString
+          echo $PFXBase64.Substring(0, 4)
           $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
           $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
           $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
 
           $PFXPassword = $publisherCertificatePassword
           $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $PFXPassword)
+
+          # Define the file path where the certificate will be saved
+          $certFilePath="${{ github.workspace }}\appCert.pfx"
+
           [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
 
           dir
