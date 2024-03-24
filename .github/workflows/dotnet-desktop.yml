@@ -35,7 +35,7 @@ jobs:
       BuildMode: StoreUpload  # Possible Values: StoreUpload  SideLoadOnly
       TargetPlatform: ${{ matrix.targetplatform }}
       RuntimeIdentifier: win-${{ matrix.targetplatform }}
-      AppxPackageDir: AppPackages
+      AppxPackageDir: AppPackages\
 
     steps:
     - name: Checkout
@@ -184,6 +184,7 @@ jobs:
           /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
           /p:AppxPackageSigningEnabled=true `
           /p:AppxBundle="${{ env.AppxBundle}}" `
+          /p:GenerateAppxPackageOnBuild=true `
           /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
           /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
           /p:PackageCertificatePassword="$publisherCertificatePassword"`
