@@ -120,7 +120,7 @@ jobs:
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
-      if: env.Wpf_build == 'true'
+      if: env.Wpf_build == 'true' 
       run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
       env:
         Configuration: ${{ matrix.configuration }}
@@ -177,7 +177,7 @@ jobs:
 
           msbuild $env:Solution_Name `
           /t:Restore `
-          /p:Configuration=Release `
+          /p:Configuration=${{ matrix.configuration }} `
           /p:Platform=${{ matrix.targetplatform }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
@@ -190,7 +190,7 @@ jobs:
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
-          /p:Configuration=$env:Configuration `
+          /p:Configuration=${{ matrix.configuration }} `
           /p:Platform=${{ matrix.targetplatform }}  `
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
@@ -203,7 +203,7 @@ jobs:
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
-          /p:Configuration=$env:Configuration `
+          /p:Configuration=${{ matrix.configuration }} `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
           /p:AppxBundle=$env:AppxBundle `
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
