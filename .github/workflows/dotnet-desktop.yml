@@ -176,7 +176,7 @@ jobs:
           mkdir ${{env.AppxPackageDir}}
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /t:Restore `
+          /t:Restore;Build `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Runtimeidentifier=win-$env:TargetPlatform `
           /p:Configuration=${{ matrix.configuration }} `
