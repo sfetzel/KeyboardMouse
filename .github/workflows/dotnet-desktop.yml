@@ -73,6 +73,9 @@ jobs:
         $manifest.Package.Identity.Version = "${{ steps.version-creator.outputs.APP_VERSION }}"
         $manifest.save("$env:Wap_Project_Path\Package.appxmanifest")
 
+        # Display the content of the Package.appxmanifest file
+        Get-Content "$env:Wap_Project_Path\Package.appxmanifest"
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       if: env.Wpf_build == 'true' 

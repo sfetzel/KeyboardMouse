@@ -6,7 +6,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="8273mfetzel.KeyboardMouseWin" Publisher="CN=marti" Version="24.3.427.0" />
+  <Identity Name="8273mfetzel.KeyboardMouse" Publisher="CN=8F2F0FD9-2706-45A2-AB07-DFAD9CE7C504" Version="24.3.427.0" />
 
   <Properties>
     <DisplayName>KeyboardMouse</DisplayName>
