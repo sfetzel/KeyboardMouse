@@ -213,10 +213,9 @@ jobs:
           
           dir ${{env.AppxPackageDir}}
           
-          dir mkdir ${{env.AppxPackageDir}}
-          dir $env:Wap_Project_Path\
-          dir $env:Wap_Project_Path\bin\
-          dir $env:Wap_Project_Path\bin\$env:Configuration\$env:TargetPlatform\
+          # dir $env:Wap_Project_Path\
+          # dir $env:Wap_Project_Path\bin\
+          # dir $env:Wap_Project_Path\bin\$env:Configuration\$env:TargetPlatform\
 
         azPSVersion: "latest"
 
