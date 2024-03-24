@@ -18,7 +18,7 @@ jobs:
         # configuration: [Debug, Release]
         # targetplatform: [x86, x64]
         configuration: [Release]
-        targetplatform: [x86]
+        targetplatform: [x86,x64]
 
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
