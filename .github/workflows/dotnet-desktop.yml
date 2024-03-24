@@ -191,7 +191,7 @@ jobs:
             exit $LASTEXITCODE
           }
 
-          dir mkdir ${{env.AppxPackageDir}}
+          dir ${{env.AppxPackageDir}}
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
