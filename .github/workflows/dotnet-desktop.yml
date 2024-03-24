@@ -185,7 +185,8 @@ jobs:
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
-          /p:TargetFrameworks=net8.0-windows
+          /p:TargetFrameworks=net8.0-windows `
+          /p:RuntimeIdentifiers=win-x64
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "MSBuild failed with exit code $LASTEXITCODE"
