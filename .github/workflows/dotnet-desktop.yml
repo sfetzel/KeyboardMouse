@@ -159,6 +159,12 @@ jobs:
     - name: Build the Windows Application Packaging Project (wapproj) with powershell
       if: env.Wap_build == 'true'
       uses: azure/powershell@v1
+      env:
+        Appx_Bundle: Never
+        Appx_Bundle_Platforms: x64
+        Appx_Package_Build_Mode: SideloadOnly
+        Appx_Package_Dir: Packages\
+        Configuration: ${{ matrix.configuration }}
       with:
         inlineScript: |
           $keyvaultname="${{ secrets.KEYVAULTNAME }}"
@@ -187,8 +193,7 @@ jobs:
           
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Build `
-          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
-          /p:Runtimeidentifier=win-$env:TargetPlatform `
+          /p:AppxBundlePlatforms="$env:Appx_Bundle_Platforms" `
           /p:Configuration=${{ matrix.configuration }} `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
           /p:AppxBundle=$env:AppxBundle `
