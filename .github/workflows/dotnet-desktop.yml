@@ -43,51 +43,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: azure/login@v1
-      if: env.Wap_build == 'true'
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        enable-AzPSSession: true 
-  
-    - name: Download certificate & install
-      if: env.Wap_build == 'true'
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          # Define the name of the key vault and the secret field
-          $keyvaultname="${{ secrets.KEYVAULTNAME }}"
-          $keyvaultSecretField="AppPublisherCertificateName"
-          $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
-    
-          # Get the certificate name from the Azure Key Vault and Convert the SecureString to a regular string
-          $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
-          $certificateNameString = $certificateName.SecretValue | ConvertFrom-SecureString -AsPlainText
-
-          # Get the secret (the certificate) from the Azure Key Vault
-          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
-          $PlainTextString = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText 
-
-          # Get the password for the certificate
-          $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
-          $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
-
-          $PFXBase64 = $PlainTextString
-          $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
-          $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
-          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
-          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $publisherCertificatePassword)
-
-          # Define the file path where the certificate will be saved
-          $certFilePath="${{ github.workspace }}\appCert.pfx"
-          [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
-
-          # Set the certFilePath as an environment variable
-          echo "CERT_FILE_PATH=$certFilePath" | Out-File -FilePath $env:GITHUB_ENV -Append
-        azPSVersion: "latest"
-
-    - name: Use certFilePath
-      run: echo "The certificate file path is ${{ env.CERT_FILE_PATH }}"
-
     # Install the .NET workload
     - name: Install .NET
       uses: actions/setup-dotnet@v3
@@ -156,15 +111,51 @@ jobs:
       if: env.Wap_build == 'true'
       run: dotnet clean ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
 
+    - uses: azure/login@v1
+      if: env.Wap_build == 'true'
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        enable-AzPSSession: true 
+  
+    - name: Download certificate & install
+      if: env.Wap_build == 'true'
+      uses: azure/powershell@v1
+      with:
+        inlineScript: |
+          # Define the name of the key vault and the secret field
+          $keyvaultname="${{ secrets.KEYVAULTNAME }}"
+          $keyvaultSecretField="AppPublisherCertificateName"
+          $keyvaultPublisherCertificatePasswordField="AppPublisherCertificatePassword"  
+    
+          # Get the certificate name from the Azure Key Vault and Convert the SecureString to a regular string
+          $certificateName = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultSecretField
+          $certificateNameString = $certificateName.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          # Get the secret (the certificate) from the Azure Key Vault
+          $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $certificateNameString
+          $PlainTextString = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText 
+
+          # Get the password for the certificate
+          $publisherCertificatePasswordSecure = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificatePasswordField
+          $publisherCertificatePassword = $publisherCertificatePasswordSecure.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          $PFXBase64 = $PlainTextString
+          $PFXBytes = [System.Convert]::FromBase64String($PFXBase64)
+          $storageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
+          $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $PFXBytes, "", $storageFlags
+          $PFXBytes = $x509Cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $publisherCertificatePassword)
+
+          # Define the file path where the certificate will be saved
+          $certFilePath="${{ github.workspace }}\appCert.pfx"
+          [System.IO.File]::WriteAllBytes($certFilePath, $PFXBytes)
+
+          # Set the certFilePath as an environment variable
+          echo "CERT_FILE_PATH=$certFilePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+        azPSVersion: "latest"
+
     - name: Build the Windows Application Packaging Project (wapproj) with powershell
       if: env.Wap_build == 'true'
       uses: azure/powershell@v1
-      env:
-        Appx_Bundle: Never
-        Appx_Bundle_Platforms: x64
-        Appx_Package_Build_Mode: SideloadOnly
-        Appx_Package_Dir: Packages\
-        Configuration: ${{ matrix.configuration }}
       with:
         inlineScript: |
           $keyvaultname="${{ secrets.KEYVAULTNAME }}"
@@ -193,18 +184,12 @@ jobs:
           /p:GenerateAppxPackageOnBuild=true `
           /p:TargetFramework=net8.0-windows `
           /p:AppInstallerUri="${{env.AppxPackageDir}}" `
-          /p:RuntimeIdentifiers=win-x86
+          /p:RuntimeIdentifiers=win-${{matrix.targetplatform}}
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSBuild Build failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE
           }
-          
-          dir ${{env.AppxPackageDir}}
-          
-          # dir $env:Wap_Project_Path\
-          # dir $env:Wap_Project_Path\bin\
-          # dir $env:Wap_Project_Path\bin\$env:Configuration\$env:TargetPlatform\
 
         azPSVersion: "latest"
 
