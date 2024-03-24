@@ -183,6 +183,7 @@ jobs:
               Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE
           }
+          echo "MSBuild Restore succeeded"
           
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Build `
