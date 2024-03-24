@@ -31,8 +31,8 @@ jobs:
       Wap_build: true
       Wap_Project_Directory: your-wap-project-directory-name    # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
       Wap_Project_Path: KeyboardMouseWin.Wap                # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
-      AppxBundle: Always # Possible Values: Always, Never
-      BuildMode: StoreUpload  # Possible Values: StoreUpload  SideLoadOnly
+      AppxBundle: Never # Possible Values: Always, Never
+      BuildMode: SideloadOnly  # Possible Values: StoreUpload  SideLoadOnly
       TargetPlatform: ${{ matrix.targetplatform }}
       RuntimeIdentifier: win-${{ matrix.targetplatform }}
       AppxPackageDir: ${{ github.workspace }}\AppPackages\
@@ -175,23 +175,31 @@ jobs:
 
           mkdir ${{env.AppxPackageDir}}
 
-          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          /t:Restore `
-          /p:Platform=${{ matrix.configuration }}  `
-          /p:TargetFramework=net8.0-windows `
-          /p:Runtimeidentifier=win-$env:TargetPlatform `
-          /p:AppInstallerUri="${{env.AppxPackageDir}}" `
-          /p:GenerateAppInstallerFile=true `
-          /p:Configuration=$env:Configuration `
-          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
-          /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
-          /p:AppxPackageSigningEnabled=true `
-          /p:AppxBundle="${{ env.AppxBundle}}" `
-          /p:GenerateAppxPackageOnBuild=true `
-          /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
-          /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
-          /p:PackageCertificatePassword="$publisherCertificatePassword"`
+          # msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          # /t:Restore `
+          # /p:Platform=${{ matrix.configuration }}  `
+          # /p:TargetFramework=net8.0-windows `
+          # /p:Runtimeidentifier=win-$env:TargetPlatform `
+          # /p:AppInstallerUri="${{env.AppxPackageDir}}" `
+          # /p:GenerateAppInstallerFile=true `
+          # /p:Configuration=$env:Configuration `
+          # /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
+          # /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
+          # /p:AppxPackageSigningEnabled=true `
+          # /p:AppxBundle="${{ env.AppxBundle}}" `
+          # /p:GenerateAppxPackageOnBuild=true `
+          # /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
+          # /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
+          # /p:PackageCertificatePassword="$publisherCertificatePassword"`
 
+          msbuild $env:Solution_Name `
+          /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
+          /p:Configuration=$env:Configuration `
+          /p:UapAppxPackageBuildMode=$env:BuildMode `
+          /p:AppxBundle=$env:AppxBundle `
+          /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
+          /p:AppxPackageDir="$env:AppxPackageDir" `
+          /p:GenerateAppxPackageOnBuild=true
           dir ${{env.AppxPackageDir}}
 
         azPSVersion: "latest"
