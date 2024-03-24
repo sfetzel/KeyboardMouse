@@ -35,7 +35,7 @@ jobs:
       BuildMode: StoreUpload  # Possible Values: StoreUpload  SideLoadOnly
       TargetPlatform: ${{ matrix.targetplatform }}
       RuntimeIdentifier: win-${{ matrix.targetplatform }}
-      AppxPackageDir: AppPackages\
+      AppxPackageDir: ${{ github.workspace }}\AppPackages\
 
     steps:
     - name: Checkout
@@ -172,6 +172,8 @@ jobs:
           # Get the thumbprint for the certificate
           $resizesigningCertthumbprint = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $keyvaultPublisherCertificateThumbprintField
           $resizesigningCertthumbprint = $resizesigningCertthumbprint.SecretValue | ConvertFrom-SecureString -AsPlainText
+
+          mkdir ${{env.AppxPackageDir}}
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /t:Restore `
