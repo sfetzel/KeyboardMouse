@@ -182,8 +182,14 @@ jobs:
           /p:TargetFramework=net8.0-windows `
           /p:Runtimeidentifier=win-$env:TargetPlatform
          
+          echo "MSBuild Restore exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MSBuild Restore failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /p:ParentConfiguration=$env:Configuration `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
           /p:Configuration=$env:Configuration `
           /p:UapAppxPackageBuildMode=$env:BuildMode `
@@ -191,7 +197,6 @@ jobs:
           /p:PackageCertificateKeyFile=$env:CERT_FILE_PATH `
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true
-          dir ${{env.AppxPackageDir}}
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "MSBuild failed with exit code $LASTEXITCODE"
