@@ -175,22 +175,13 @@ jobs:
 
           mkdir ${{env.AppxPackageDir}}
 
-          # msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
-          # /t:Restore `
-          # /p:Platform=${{ matrix.configuration }}  `
-          # /p:TargetFramework=net8.0-windows `
-          # /p:Runtimeidentifier=win-$env:TargetPlatform `
-          # /p:AppInstallerUri="${{env.AppxPackageDir}}" `
-          # /p:GenerateAppInstallerFile=true `
-          # /p:Configuration=$env:Configuration `
-          # /p:AppxBundlePlatforms="${{ matrix.targetplatform}}" `
-          # /p:UapAppxPackageBuildMode="${{ env.BuildMode }}" `
-          # /p:AppxPackageSigningEnabled=true `
-          # /p:AppxBundle="${{ env.AppxBundle}}" `
-          # /p:GenerateAppxPackageOnBuild=true `
-          # /p:PackageCertificateThumbprint="$resizesigningCertthumbprint" `
-          # /p:PackageCertificateKeyFile="${{ env.CERT_FILE_PATH }}" `
-          # /p:PackageCertificatePassword="$publisherCertificatePassword"`
+          # nuget restore
+          msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
+          /t:Restore `
+          /p:Platform=${{ matrix.configuration }}  `
+          /p:TargetFramework=net8.0-windows `
+          /p:Runtimeidentifier=win-$env:TargetPlatform
+         
 
           msbuild $env:Wap_Project_Path/$env:Wap_Project_Path.wapproj `
           /p:AppxBundlePlatforms="${{ matrix.targetplatform}}"  `
