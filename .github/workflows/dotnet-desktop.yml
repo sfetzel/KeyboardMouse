@@ -203,6 +203,7 @@ jobs:
           /p:AppxPackageDir="$env:AppxPackageDir" `
           /p:GenerateAppxPackageOnBuild=true `
           /p:TargetFramework=net8.0-windows `
+          /p:AppInstallerUri="${{env.AppxPackageDir}}" `
           /p:RuntimeIdentifiers=win-x86
           
           if ($LASTEXITCODE -ne 0) {
