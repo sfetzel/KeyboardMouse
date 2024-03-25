@@ -60,7 +60,7 @@ jobs:
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       if: env.Wpf_build == 'true' 
-      run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj
+      run: dotnet restore ${{ env.Wpf_Project_Path }}/${{ env.Wpf_Project_Path }}.csproj -r win-${{matrix.targetplatform}}
       env:
         Configuration: ${{ matrix.configuration }}
 
@@ -81,7 +81,7 @@ jobs:
     # Publish the Wap package
     - name: Publish the Wpf package
       if: github.event_name != 'pull_request' && env.Wpf_build == 'true'
-      run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-x64 -o ./published
+      run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-${{matrix.targetplatform}} -o ./published
 
     # Upload the published app as an artifact
     - name: Upload artifact
