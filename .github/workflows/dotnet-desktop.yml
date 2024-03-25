@@ -80,7 +80,7 @@ jobs:
 
     # Publish the Wap package
     - name: Publish the Wpf package
-      # if: github.event_name != 'pull_request' && env.Wpf_build == 'true'
+      if: github.event_name != 'pull_request' && env.Wpf_build == 'true'
       run: dotnet publish ${{ env.Wpf_Project_Path }} --no-restore -c ${{ matrix.configuration }} --self-contained true -r win-${{matrix.targetplatform}} -o ./published
 
     # Upload the published app as an artifact
