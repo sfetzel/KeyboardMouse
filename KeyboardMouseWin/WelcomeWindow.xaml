@@ -7,9 +7,12 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:WelcomeWindowViewModel}"
         Title="Welcome" Height="450" Width="800">
+    <Window.Icon>
+        <DrawingImage />
+    </Window.Icon>
     <Window.Resources>
         <Viewbox x:Key="KeyboardShortcut" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Width="1006.11" Height="1009.31">
-            <Canvas Width="1006.11" Height="1009.31">
+            <Canvas Width="640" Height="480">
                 <Polyline Points="961.89,152.12 961.89,965.09 148.92,965.09" Stroke="#33af83" StrokeThickness="88.44" StrokeLineJoin="Round"/>
                 <Polyline Points="857.19,44.22 44.22,44.22 44.22,857.19" Stroke="#33af83" StrokeThickness="88.44" StrokeLineJoin="Round"/>
                 <Polyline Points="644.99,549.11 645.75,285.72 370.59,286.46" Stroke="#e53f7b" StrokeThickness="88.44"  StrokeLineJoin="Round"/>
@@ -19,26 +22,38 @@
     </Window.Resources>
     <Window.Content>
         <DockPanel>
+            <DockPanel DockPanel.Dock="Left" 
+                       VerticalAlignment="Bottom" 
+                       MinHeight="200" 
+                       MinWidth="200">
+                <DockPanel.Background>
+                    <VisualBrush Visual="{StaticResource KeyboardShortcut}" 
+                             Stretch="Uniform" 
+                             AutoLayoutContent="True" 
+                             AlignmentX="Left" 
+                             AlignmentY="Top" />
+                </DockPanel.Background>
+            </DockPanel>
             <TextBlock DockPanel.Dock="Top" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontWeight="Bold" Text="Welcome"/>
 
             <TextBlock DockPanel.Dock="Top" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16">
-                <Run Text="To show possible Keyboards please Press: "/>
-                <Run FontWeight="Bold" Text="{Binding Settings.CaptionKeyCombination}" />
+    <Run Text="To show possible Keyboards please Press: "/>
+    <Run FontWeight="Bold" Text="{Binding Settings.CaptionKeyCombination}" />
             </TextBlock>
 
             <TextBlock DockPanel.Dock="Top" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16">
-                <Run Text="To exit from the Shortcuts Press: "/>
-                <Run FontWeight="Bold" Text="{Binding Settings.ClearKeyCombiantion}" />
+    <Run Text="To exit from the Shortcuts Press: "/>
+    <Run FontWeight="Bold" Text="{Binding Settings.ClearKeyCombiantion}" />
             </TextBlock>
 
             <StackPanel DockPanel.Dock="Bottom" 
-                    HorizontalAlignment="Right" VerticalAlignment="Bottom" 
-                    Orientation="Horizontal"
-                    Margin="10">
+        HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+        Orientation="Horizontal"
+        Margin="10">
                 <TextBlock Text="Please restart the app after changing the config" />
                 <Button Content="Change Shortcuts"
-                    Command="{Binding Path=EditShortCuts}"
-                    Margin="10,0,0,0">
+        Command="{Binding Path=EditShortCuts}"
+        Margin="10,0,0,0">
                     <Button.ToolTip>
                         <ToolTip>
                             <TextBlock Text="Please restart the application to reload the configuration."/>
@@ -47,10 +62,11 @@
                 </Button>
             </StackPanel>
             <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" 
-                Content="Exit Keyboard Shortcut"
-                Command="{Binding Path=CloseWindow}"
-                CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}">
+    Content="Exit Keyboard Shortcut"
+    Command="{Binding Path=CloseWindow}"
+    CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}">
             </Button>
+
         </DockPanel>
     </Window.Content>
 </Window>
