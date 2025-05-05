@@ -25,31 +25,40 @@ namespace KeyboardMouseWin
         }
 
 
-        public IEnumerable<IUIElement> GetElementsOfActiveWindow()
+        public (IUIElement, Task) GetActiveWindowElement(CancellationToken token, Action<IEnumerable<IUIElement>>? onChildrenAdded)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
             var window = automation.FromHandle(foregroundWindowHandle ?? WindowsUtils.GetForegroundWindow());
-            var children = window.FindAllChildren();
-            var descendants = children.Select(element => new FlauiUiElement(element));
-            stopwatch.Stop();
-            Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find {children.Length} descendants");
-            return descendants;
+            var windowElement = new FlauiUiElement(window);
+            
+            return (windowElement, AddDescendants(windowElement, token, onChildrenAdded));
         }
 
-        public IEnumerable<IUIElement> GetSubElements(IUIElement rootElement)
+        public async Task AddDescendants(IUIElement rootElement, CancellationToken token, Action<IEnumerable<IUIElement>>? onChildrenAdded)
         {
             if (rootElement is FlauiUiElement flauiElement)
             {
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                var children = flauiElement.Element.FindAllChildren();
-                var descendants = children.Select(element => new FlauiUiElement(element));
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+                var rawChildren = flauiElement.Element.FindAllChildren();
+                var children = rawChildren.Select(element => new FlauiUiElement(element)).ToArray();
+                onChildrenAdded?.Invoke(children);
+
+                foreach (var child in children)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    await AddDescendants(child, token, onChildrenAdded);
+                }
+
                 stopwatch.Stop();
-                Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find {children.Length} descendants");
-                return descendants;
+                Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to find {rawChildren.Length} descendants");
             }
-            return [];
         }
     }
 }

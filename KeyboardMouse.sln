@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyboardMouseWin.Test", "Ke
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{B8107673-C22A-4489-A8D4-7E0D9ECAF8CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardMouseWin.TestApp", "KeyboardMouseWin.TestApp\KeyboardMouseWin.TestApp.csproj", "{B81DDE30-BE7A-405D-93E2-4F613A302746}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyboardMouseWin.TestApp", "KeyboardMouseWin.TestApp\KeyboardMouseWin.TestApp.csproj", "{B81DDE30-BE7A-405D-93E2-4F613A302746}"
 EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "KeyboardMouseWin.Wap", "KeyboardMouseWin.Wap\KeyboardMouseWin.Wap.wapproj", "{6450077F-593C-42BD-97A6-6011B6B2AE2F}"
 EndProject
@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\dotnet-desktop.yml = .github\workflows\dotnet-desktop.yml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceComparison", "PerformanceComparison\PerformanceComparison.csproj", "{004244AD-F20C-4776-8B7C-0EE1B434C01D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -142,6 +144,26 @@ Global
 		{6450077F-593C-42BD-97A6-6011B6B2AE2F}.Release|x86.ActiveCfg = Release|x86
 		{6450077F-593C-42BD-97A6-6011B6B2AE2F}.Release|x86.Build.0 = Release|x86
 		{6450077F-593C-42BD-97A6-6011B6B2AE2F}.Release|x86.Deploy.0 = Release|x86
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|ARM.Build.0 = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|x64.Build.0 = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Debug|x86.Build.0 = Debug|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|ARM.ActiveCfg = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|ARM.Build.0 = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|ARM64.Build.0 = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|x64.ActiveCfg = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|x64.Build.0 = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|x86.ActiveCfg = Release|Any CPU
+		{004244AD-F20C-4776-8B7C-0EE1B434C01D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

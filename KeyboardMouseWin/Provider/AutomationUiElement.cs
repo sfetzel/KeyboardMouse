@@ -10,6 +10,8 @@ namespace KeyboardMouseWin.Provider
 
         public AutomationElement Element { get; set; }
 
+        public IEnumerable<IUIElement> Children => throw new NotImplementedException();
+
         public AutomationUiElement(AutomationElement element)
         {
             Element = element;

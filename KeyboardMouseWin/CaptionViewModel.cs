@@ -20,7 +20,7 @@ namespace KeyboardMouseWin
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int CaptionTimeLimit { get; } = 200;
+        public int CaptionTimeLimit { get; } = 500;
 
         private ObservableCollection<CaptionedUiElement> captionedElements = new();
         /// <summary>
@@ -35,6 +35,8 @@ namespace KeyboardMouseWin
                 NotifyPropertyChanged(nameof(CaptionedElements));
             }
         }
+
+        private List<IUIElement> uiElements = [];
 
         private void NotifyPropertyChanged(string propertyName)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -126,18 +128,11 @@ namespace KeyboardMouseWin
         public Settings Settings { get; set; } = Settings.Default;
         public Dispatcher Dispatcher { get; private set; }
 
-        private readonly IElementLookupService elementLookupService;
-        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher, IElementLookupService elementLookupService)
+        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher)
         {
             CaptionService = captionService;
             Dispatcher = dispatcher;
-            this.elementLookupService = elementLookupService;
             this.ElementProvider = elementProvider;
-        }
-        public CaptionViewModel(CaptionService captionService, IUIElementProvider elementProvider, Dispatcher dispatcher) : this(captionService, elementProvider, dispatcher,
-            new ElementLookupService(elementProvider))
-        {
-
         }
 
         public HashSet<Key> DownKeys { get; set; } = new();
@@ -286,7 +281,7 @@ namespace KeyboardMouseWin
                     var root = CaptionService.CurrentObjects.First();
                     Clear();
                     // if there are subelements, then display them.
-                    await CaptionUiElements(ElementProvider.GetSubElements(root.Value));
+                    await CaptionUiElements(root.Value);
 
                     if (CaptionService.CurrentObjects.Count == 0)
                     {
@@ -374,16 +369,28 @@ namespace KeyboardMouseWin
             Mouse.Position = currentPosition;
         }
 
-        public async Task CaptionUiElements(IEnumerable<IUIElement>? uIElements = null)
+        public async Task CaptionUiElements(IUIElement? uiElement = null)
         {
             characterIndex = 0;
             var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(CaptionTimeLimit));
             var stopwatch = Stopwatch.StartNew();
-            var elements = await elementLookupService.CaptionUiElementsAsync(uIElements ?? ElementProvider.GetElementsOfActiveWindow(), 
-                UpdateCaptionedElements, cancellationTokenSource.Token);
+            Task task;
+            Action<IEnumerable<IUIElement>> action = (children) =>
+            {
+                uiElements.AddRange(children);
+                UpdateCaptionedElements(uiElements);
+            };
+            uiElements = new();
+            if (uiElement == null)
+            {
+                (var element, task) = ElementProvider.GetActiveWindowElement(cancellationTokenSource.Token, action);
+            }
+            else
+            {
+                task = ElementProvider.AddDescendants(uiElement, cancellationTokenSource.Token, action);
+            }
             Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms to execute element lookup service");
-            // execute update once more because call to this function may be outside of time frame.
-            UpdateCaptionedElements(elements);
+            await task;
             stopwatch.Stop();
             Debug.WriteLine($"Took {stopwatch.ElapsedMilliseconds} ms in total to caption ui elements");
         }

@@ -11,7 +11,7 @@ using System.Windows.Automation;
 
 namespace KeyboardMouseWin
 {
-    public class AutomationElementProvider : IUIElementProvider
+    public class AutomationElementProvider
     {
         public int MaxDepth { get; set; } = 2;
 

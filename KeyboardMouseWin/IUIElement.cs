@@ -6,5 +6,6 @@ namespace KeyboardMouseWin
     {
         public Rectangle BoundingRectangle { get; }
         public System.Windows.Point? ClickPoint { get; }
+        public IEnumerable<IUIElement> Children { get; }
     }
 }
